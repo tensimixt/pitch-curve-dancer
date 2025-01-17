@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useCallback } from 'react';
 import * as PIXI from 'pixi.js';
+import { usePixiApp } from '../hooks/usePixiApp';
 
 interface Point {
   x: number;
@@ -12,75 +13,39 @@ interface Point {
 
 const PitchBend = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const appRef = useRef<PIXI.Application | null>(null);
   const pointsRef = useRef<Point[]>([]);
-  const graphicsRef = useRef<PIXI.Graphics | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
+  const { app, graphics } = usePixiApp(containerRef);
 
-  useEffect(() => {
-    // Set mounted state
-    setIsMounted(true);
+  const updateCurve = useCallback(() => {
+    if (!graphics || pointsRef.current.length < 2) return;
+
+    graphics.clear();
+    graphics.lineStyle(2, 0xffffff, 0.8);
+
+    graphics.moveTo(pointsRef.current[0].x, pointsRef.current[0].y);
     
-    return () => {
-      setIsMounted(false);
-      if (appRef.current) {
-        appRef.current.destroy(true, { children: true });
-        appRef.current = null;
-        graphicsRef.current = null;
-        pointsRef.current = [];
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!containerRef.current || !isMounted || appRef.current) return;
-
-    // Create PIXI Application
-    const app = new PIXI.Application({
-      background: '#1a1a1a',
-      resizeTo: containerRef.current,
-      antialias: true,
-    });
-
-    // Store the app reference
-    appRef.current = app;
-
-    // Create graphics for the curve
-    const graphics = new PIXI.Graphics();
-    app.stage.addChild(graphics);
-    graphicsRef.current = graphics;
-
-    // Create a function to handle clicks that we can reference for cleanup
-    const handleClick = (e: MouseEvent) => {
-      if (!app.view || e.target !== app.view) return;
-      const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      addPoint(x, y);
-    };
-
-    if (containerRef.current && app.view) {
-      containerRef.current.appendChild(app.view as HTMLCanvasElement);
-      app.view.addEventListener('click', handleClick);
+    for (let i = 1; i < pointsRef.current.length; i++) {
+      const prevPoint = pointsRef.current[i - 1];
+      const currentPoint = pointsRef.current[i];
+      
+      const cpX = (prevPoint.x + currentPoint.x) / 2;
+      graphics.bezierCurveTo(
+        cpX, prevPoint.y,
+        cpX, currentPoint.y,
+        currentPoint.x, currentPoint.y
+      );
     }
+  }, [graphics]);
 
-    return () => {
-      if (app.view) {
-        app.view.removeEventListener('click', handleClick);
-      }
-    };
-  }, [isMounted]);
+  const addPoint = useCallback((x: number, y: number) => {
+    if (!app) return;
 
-  const addPoint = (x: number, y: number) => {
-    if (!appRef.current) return;
-
-    // Create point sprite
     const pointTexture = new PIXI.Graphics()
       .beginFill('#00ff88')
       .drawCircle(0, 0, 8)
       .endFill();
 
-    const sprite = new PIXI.Sprite(appRef.current.renderer.generateTexture(pointTexture)) as Point['sprite'];
+    const sprite = new PIXI.Sprite(app.renderer.generateTexture(pointTexture)) as Point['sprite'];
     sprite.x = x;
     sprite.y = y;
     sprite.anchor.set(0.5);
@@ -89,77 +54,65 @@ const PitchBend = () => {
     sprite.data = null;
     sprite.dragging = false;
 
-    // Make point draggable
+    const onDragStart = (event: PIXI.FederatedPointerEvent) => {
+      sprite.alpha = 0.8;
+      sprite.data = event.data;
+      sprite.dragging = true;
+    };
+
+    const onDragEnd = (event: PIXI.FederatedPointerEvent) => {
+      sprite.alpha = 1;
+      sprite.dragging = false;
+      sprite.data = null;
+    };
+
+    const onDragMove = (event: PIXI.FederatedPointerEvent) => {
+      if (sprite.dragging) {
+        const newPosition = sprite.data?.getLocalPosition(sprite.parent);
+        if (newPosition) {
+          sprite.x = newPosition.x;
+          sprite.y = newPosition.y;
+          
+          const point = pointsRef.current.find(p => p.sprite === sprite);
+          if (point) {
+            point.x = newPosition.x;
+            point.y = newPosition.y;
+          }
+          
+          updateCurve();
+        }
+      }
+    };
+
     sprite
       .on('pointerdown', onDragStart)
       .on('pointerup', onDragEnd)
       .on('pointerupoutside', onDragEnd)
       .on('pointermove', onDragMove);
 
-    appRef.current.stage.addChild(sprite);
+    app.stage.addChild(sprite);
     
     const point = { x, y, sprite };
     pointsRef.current.push(point);
     updateCurve();
-  };
+  }, [app, updateCurve]);
 
-  const updateCurve = () => {
-    if (!graphicsRef.current || pointsRef.current.length < 2) return;
+  const handleClick = useCallback((e: MouseEvent) => {
+    if (!app?.view || e.target !== app.view) return;
+    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    addPoint(x, y);
+  }, [app, addPoint]);
 
-    const graphics = graphicsRef.current;
-    graphics.clear();
-    graphics.lineStyle(2, 0xffffff, 0.8);
-
-    // Draw curve through points
-    graphics.moveTo(pointsRef.current[0].x, pointsRef.current[0].y);
+  React.useEffect(() => {
+    if (!app?.view) return;
     
-    for (let i = 1; i < pointsRef.current.length; i++) {
-      const prevPoint = pointsRef.current[i - 1];
-      const currentPoint = pointsRef.current[i];
-      
-      // Calculate control points for smooth curve
-      const cpX = (prevPoint.x + currentPoint.x) / 2;
-      graphics.bezierCurveTo(
-        cpX, prevPoint.y,
-        cpX, currentPoint.y,
-        currentPoint.x, currentPoint.y
-      );
-    }
-  };
-
-  const onDragStart = (event: PIXI.FederatedPointerEvent) => {
-    const sprite = event.currentTarget as Point['sprite'];
-    sprite.alpha = 0.8;
-    sprite.data = event.data;
-    sprite.dragging = true;
-  };
-
-  const onDragEnd = (event: PIXI.FederatedPointerEvent) => {
-    const sprite = event.currentTarget as Point['sprite'];
-    sprite.alpha = 1;
-    sprite.dragging = false;
-    sprite.data = null;
-  };
-
-  const onDragMove = (event: PIXI.FederatedPointerEvent) => {
-    const sprite = event.currentTarget as Point['sprite'];
-    if (sprite.dragging) {
-      const newPosition = sprite.data?.getLocalPosition(sprite.parent);
-      if (newPosition) {
-        sprite.x = newPosition.x;
-        sprite.y = newPosition.y;
-        
-        // Update point position in our array
-        const point = pointsRef.current.find(p => p.sprite === sprite);
-        if (point) {
-          point.x = newPosition.x;
-          point.y = newPosition.y;
-        }
-        
-        updateCurve();
-      }
-    }
-  };
+    app.view.addEventListener('click', handleClick);
+    return () => {
+      app.view.removeEventListener('click', handleClick);
+    };
+  }, [app, handleClick]);
 
   return (
     <div 
