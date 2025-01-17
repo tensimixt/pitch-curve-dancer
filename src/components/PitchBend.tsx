@@ -28,6 +28,50 @@ const PitchBend = () => {
     return null;
   };
 
+  const isPointNearCurve = (pos: Point): { isNear: boolean, insertIndex: number } => {
+    if (points.length < 2) return { isNear: false, insertIndex: points.length };
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+
+      // Calculate distance from point to line segment
+      const A = pos.x - p1.x;
+      const B = pos.y - p1.y;
+      const C = p2.x - p1.x;
+      const D = p2.y - p1.y;
+
+      const dot = A * C + B * D;
+      const lenSq = C * C + D * D;
+      let param = -1;
+
+      if (lenSq !== 0) param = dot / lenSq;
+
+      let xx, yy;
+
+      if (param < 0) {
+        xx = p1.x;
+        yy = p1.y;
+      } else if (param > 1) {
+        xx = p2.x;
+        yy = p2.y;
+      } else {
+        xx = p1.x + param * C;
+        yy = p1.y + param * D;
+      }
+
+      const dx = pos.x - xx;
+      const dy = pos.y - yy;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < 10) {
+        return { isNear: true, insertIndex: i + 1 };
+      }
+    }
+
+    return { isNear: false, insertIndex: points.length };
+  };
+
   const handleMouseDown = useCallback((e: MouseEvent) => {
     const pos = getMousePos(e);
     const pointIndex = findNearestPoint(pos);
@@ -36,8 +80,17 @@ const PitchBend = () => {
       setIsDragging(true);
       setDragPointIndex(pointIndex);
     } else {
-      setPoints(prev => [...prev, pos]);
-      console.log('Added point at:', pos);
+      const { isNear, insertIndex } = isPointNearCurve(pos);
+      if (isNear) {
+        // Insert point at the correct position in the array
+        const newPoints = [...points];
+        newPoints.splice(insertIndex, 0, pos);
+        setPoints(newPoints);
+        console.log('Added point on curve at:', pos);
+      } else {
+        setPoints(prev => [...prev, pos]);
+        console.log('Added new point at:', pos);
+      }
     }
   }, [points]);
 
