@@ -37,8 +37,7 @@ const PitchBend = () => {
 
     // Create a function to handle clicks that we can reference for cleanup
     const handleClick = (e: MouseEvent) => {
-      const currentApp = appRef.current;
-      if (!currentApp?.view || e.target !== currentApp.view) return;
+      if (!app.view || e.target !== app.view) return;
       const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -56,18 +55,23 @@ const PitchBend = () => {
     // Ensure the app is ready before initializing
     requestAnimationFrame(initApp);
 
+    // Cleanup function
     return () => {
-      if (appRef.current?.view) {
-        appRef.current.view.removeEventListener('click', handleClick);
-      }
-
-      if (appRef.current) {
-        const view = appRef.current.view;
-        if (view instanceof HTMLCanvasElement && view.parentNode) {
+      // Remove event listener if view exists
+      const view = appRef.current?.view as HTMLCanvasElement;
+      if (view) {
+        view.removeEventListener('click', handleClick);
+        if (view.parentNode) {
           view.parentNode.removeChild(view);
         }
-        appRef.current.destroy(true);
+      }
+
+      // Destroy app if it exists
+      if (appRef.current) {
+        appRef.current.destroy(true, { children: true });
         appRef.current = null;
+        graphicsRef.current = null;
+        pointsRef.current = [];
         isInitializedRef.current = false;
       }
     };
