@@ -17,17 +17,16 @@ export const drawGrid = (
   // Clear canvas
   context.clearRect(0, 0, width, height);
 
-  // Draw horizontal lines and background for each note
+  // Draw horizontal lines for each note
   const noteHeight = 25; // Fixed height per note
   
   NOTES.forEach((note, index) => {
     const y = index * noteHeight;
     
-    // Fill background color based on note type
+    // Fill key background color
     context.fillStyle = isBlackKey(note) ? '#222222' : '#ffffff';
-    context.fillRect(0, y, width, noteHeight);
+    context.fillRect(0, 0, 50, noteHeight); // Only color the key area (first 50px)
     
-    // Draw horizontal line
     context.beginPath();
     context.strokeStyle = '#2a2a2a';
     context.lineWidth = 1;
@@ -61,13 +60,16 @@ export const drawGrid = (
     const x = i * timeMarkerWidth;
     context.moveTo(x, 0);
     context.lineTo(x, height);
-    
-    // Add time marker label
-    context.fillStyle = '#666666';
-    context.fillText(`${i}s`, x + 5, 15);
   }
   
   context.stroke();
+  
+  // Add time marker labels
+  for (let i = 0; i <= totalTimeMarkers; i++) {
+    const x = i * timeMarkerWidth;
+    context.fillStyle = '#666666';
+    context.fillText(`${i}s`, x + 5, 15);
+  }
 };
 
 export const drawCurve = (
