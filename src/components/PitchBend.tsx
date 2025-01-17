@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as PIXI from 'pixi.js';
 
 interface Point {
@@ -15,10 +15,25 @@ const PitchBend = () => {
   const appRef = useRef<PIXI.Application | null>(null);
   const pointsRef = useRef<Point[]>([]);
   const graphicsRef = useRef<PIXI.Graphics | null>(null);
-  const isInitializedRef = useRef(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current || isInitializedRef.current) return;
+    // Set mounted state
+    setIsMounted(true);
+    
+    return () => {
+      setIsMounted(false);
+      if (appRef.current) {
+        appRef.current.destroy(true, { children: true });
+        appRef.current = null;
+        graphicsRef.current = null;
+        pointsRef.current = [];
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!containerRef.current || !isMounted || appRef.current) return;
 
     // Create PIXI Application
     const app = new PIXI.Application({
@@ -44,44 +59,17 @@ const PitchBend = () => {
       addPoint(x, y);
     };
 
-    // Initialize the app with a delay
-    const initApp = () => {
-      if (!containerRef.current || !app.view) return;
-      
-      // Add a 2-second delay before initialization
-      setTimeout(() => {
-        if (containerRef.current && app.view) {
-          containerRef.current.appendChild(app.view as HTMLCanvasElement);
-          app.view.addEventListener('click', handleClick);
-          isInitializedRef.current = true;
-        }
-      }, 2000);
-    };
+    if (containerRef.current && app.view) {
+      containerRef.current.appendChild(app.view as HTMLCanvasElement);
+      app.view.addEventListener('click', handleClick);
+    }
 
-    // Ensure the app is ready before initializing
-    requestAnimationFrame(initApp);
-
-    // Cleanup function
     return () => {
-      // Remove event listener if view exists
-      if (appRef.current?.view) {
-        const view = appRef.current.view as HTMLCanvasElement;
-        view.removeEventListener('click', handleClick);
-        if (view.parentNode) {
-          view.parentNode.removeChild(view);
-        }
-      }
-
-      // Destroy app if it exists
-      if (appRef.current) {
-        appRef.current.destroy(true, { children: true });
-        appRef.current = null;
-        graphicsRef.current = null;
-        pointsRef.current = [];
-        isInitializedRef.current = false;
+      if (app.view) {
+        app.view.removeEventListener('click', handleClick);
       }
     };
-  }, []);
+  }, [isMounted]);
 
   const addPoint = (x: number, y: number) => {
     if (!appRef.current) return;
