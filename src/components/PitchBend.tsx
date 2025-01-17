@@ -49,22 +49,38 @@ const PitchBend = () => {
     };
   }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
+  // Piano key data
+  const pianoKeys = Array.from({ length: 44 }).map((_, i) => {
+    const note = 43 - i;
+    const isBlackKey = [1, 3, 6, 8, 10].includes(note % 12);
+    return { note, isBlackKey };
+  });
+
   return (
     <div className="relative h-[550px] w-full rounded-md border">
-      <div className="absolute left-0 top-0 bottom-0 w-12 bg-gray-800 z-10">
+      <div className="absolute left-0 top-0 bottom-0 w-16 bg-gray-800 z-10">
         {/* Piano keys */}
         <div className="h-full flex flex-col">
-          {Array.from({ length: 44 }).map((_, i) => (
+          {pianoKeys.map(({ note, isBlackKey }, i) => (
             <div 
               key={i} 
-              className="h-[25px] border-b border-gray-700 flex items-center justify-center text-xs text-gray-400"
+              className={`relative h-[25px] border-b border-gray-700 flex items-center ${
+                isBlackKey ? 'bg-gray-900' : 'bg-gray-100'
+              }`}
             >
-              {43 - i}
+              <div className={`w-full h-full flex items-center justify-center text-xs ${
+                isBlackKey ? 'text-gray-100' : 'text-gray-900'
+              }`}>
+                {note}
+              </div>
+              {isBlackKey && (
+                <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gray-900 border-l border-gray-700" />
+              )}
             </div>
           ))}
         </div>
       </div>
-      <div className="h-full w-full overflow-hidden pl-12">
+      <div className="h-full w-full overflow-hidden pl-16">
         <ScrollArea className="h-full" orientation="horizontal">
           <div className="relative h-[1100px] w-[10000px]">
             <canvas 
