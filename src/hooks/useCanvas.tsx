@@ -12,8 +12,14 @@ export const useCanvas = () => {
     const resizeCanvas = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
+      
+      // Set canvas width to match client width
       canvas.width = canvas.clientWidth;
-      canvas.height = canvas.clientHeight;
+      
+      // Calculate height based on number of notes (25px per note)
+      const numberOfNotes = 44; // Total number of notes in our scale
+      const noteHeight = 25;
+      canvas.height = numberOfNotes * noteHeight;
     };
 
     resizeCanvas();
