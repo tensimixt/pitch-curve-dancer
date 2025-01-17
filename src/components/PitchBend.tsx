@@ -26,30 +26,37 @@ const PitchBend = () => {
       antialias: true,
     });
 
-    containerRef.current.appendChild(app.view as HTMLCanvasElement);
-    appRef.current = app;
+    // Wait for the application to be properly initialized
+    requestAnimationFrame(() => {
+      if (!containerRef.current) return;
+      containerRef.current.appendChild(app.view as HTMLCanvasElement);
+      appRef.current = app;
 
-    // Create graphics for the curve
-    const graphics = new PIXI.Graphics();
-    app.stage.addChild(graphics);
-    graphicsRef.current = graphics;
+      // Create graphics for the curve
+      const graphics = new PIXI.Graphics();
+      app.stage.addChild(graphics);
+      graphicsRef.current = graphics;
 
-    // Handle click to add points
-    const handleClick = (e: MouseEvent) => {
-      if (!app.view || e.target !== app.view) return;
-      const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      addPoint(x, y);
-    };
+      // Handle click to add points
+      const handleClick = (e: MouseEvent) => {
+        if (!app.view || e.target !== app.view) return;
+        const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        addPoint(x, y);
+      };
 
-    app.view.addEventListener('click', handleClick);
+      if (app.view) {
+        app.view.addEventListener('click', handleClick);
+      }
+    });
 
     return () => {
-      if (app.view) {
-        app.view.removeEventListener('click', handleClick);
-      }
       if (appRef.current) {
+        const view = appRef.current.view;
+        if (view instanceof HTMLCanvasElement) {
+          view.parentNode?.removeChild(view);
+        }
         appRef.current.destroy(true);
         appRef.current = null;
       }
