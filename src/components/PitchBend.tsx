@@ -53,11 +53,12 @@ const PitchBend = () => {
   const getNoteLabel = (index: number): string => {
     const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     const noteIndex = index % 12;
-    const octave = Math.floor((43 - index) / 12) + 2; // Starting from C2
+    const octave = Math.floor(index / 12) - 1; // Starting from C-1
     return `${notes[noteIndex]}${octave}`;
   };
 
-  const pianoKeys = Array.from({ length: 44 }).map((_, i) => {
+  // Generate 132 keys (11 octaves * 12 notes = 132 keys from C-1 to B9)
+  const pianoKeys = Array.from({ length: 132 }).map((_, i) => {
     const note = getNoteLabel(i);
     const isBlackKey = note.includes('#');
     return { note, isBlackKey };
@@ -66,7 +67,7 @@ const PitchBend = () => {
   return (
     <div className="relative h-[550px] w-full rounded-md border">
       <ScrollArea className="h-full" orientation="horizontal">
-        <div className="flex h-[1100px] w-[10000px]">
+        <div className="flex h-[3300px] w-[10000px]">
           {/* Fixed piano keys column */}
           <div className="sticky left-0 w-16 flex-shrink-0 bg-gray-800 z-50">
             {pianoKeys.map(({ note, isBlackKey }, i) => (
