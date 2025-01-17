@@ -44,9 +44,35 @@ const PitchBend = () => {
     if (points.length > 1) {
       context.beginPath();
       context.moveTo(points[0].x, points[0].y);
-      for (let i = 1; i < points.length; i++) {
-        context.lineTo(points[i].x, points[i].y);
+
+      // Draw smooth curve through points
+      for (let i = 0; i < points.length - 1; i++) {
+        const currentPoint = points[i];
+        const nextPoint = points[i + 1];
+        
+        // Calculate control points
+        const midX = (currentPoint.x + nextPoint.x) / 2;
+        const midY = (currentPoint.y + nextPoint.y) / 2;
+        
+        if (i === 0) {
+          // First segment
+          context.quadraticCurveTo(
+            currentPoint.x,
+            currentPoint.y,
+            midX,
+            midY
+          );
+        }
+        
+        // Draw curve to midpoint using the next point as control point
+        context.quadraticCurveTo(
+          nextPoint.x,
+          nextPoint.y,
+          nextPoint.x,
+          nextPoint.y
+        );
       }
+
       context.strokeStyle = '#ffffff';
       context.lineWidth = 2;
       context.stroke();
