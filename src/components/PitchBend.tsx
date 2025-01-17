@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCanvas } from '@/hooks/useCanvas';
 import { drawCurve } from '@/utils/curveUtils';
 import UndoButton from './UndoButton';
@@ -49,13 +50,15 @@ const PitchBend = () => {
   }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className="relative">
-      <canvas 
-        ref={canvasRef}
-        className="w-full h-[500px] rounded-lg bg-gray-900"
-      />
-      <UndoButton onUndo={handleUndo} disabled={historyIndex === 0} />
-    </div>
+    <ScrollArea className="h-[550px] pr-4">
+      <div className="relative min-h-[1200px]">
+        <canvas 
+          ref={canvasRef}
+          className="w-full h-full rounded-lg bg-gray-900"
+        />
+        <UndoButton onUndo={handleUndo} disabled={historyIndex === 0} />
+      </div>
+    </ScrollArea>
   );
 };
 

@@ -9,7 +9,7 @@ const Index = () => {
           Click to add points on notes. Connect points to create pitch transitions. 
           Click on lines to add control points and drag them to shape the pitch curve.
         </p>
-        <div className="bg-gray-800 p-4 rounded-lg">
+        <div className="bg-gray-800 p-4 rounded-lg h-[600px]">
           <PitchBend />
         </div>
       </div>
