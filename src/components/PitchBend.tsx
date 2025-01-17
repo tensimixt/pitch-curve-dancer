@@ -51,7 +51,20 @@ const PitchBend = () => {
 
   return (
     <div className="relative h-[550px] w-full rounded-md border">
-      <div className="h-full w-full overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-12 bg-gray-800 z-10">
+        {/* Piano keys placeholder - we'll implement this later */}
+        <div className="h-full flex flex-col">
+          {Array.from({ length: 44 }).map((_, i) => (
+            <div 
+              key={i} 
+              className="h-[25px] border-b border-gray-700 flex items-center justify-center text-xs text-gray-400"
+            >
+              {i}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="h-full w-full overflow-hidden pl-12">
         <ScrollArea className="h-full" orientation="horizontal">
           <div className="relative h-[1100px] w-[10000px]">
             <canvas 
