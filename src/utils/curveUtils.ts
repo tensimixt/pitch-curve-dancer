@@ -1,13 +1,46 @@
 import { Point } from '@/types/canvas';
 
+const NOTES = ['C5', 'B4', 'A#4', 'A4', 'G#4', 'G4', 'F#4', 'F4', 'E4', 'D#4', 'D4', 'C#4', 'C4'];
+
+export const drawGrid = (
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number
+) => {
+  // Clear canvas
+  context.clearRect(0, 0, width, height);
+
+  // Draw horizontal lines for each note
+  const noteHeight = height / NOTES.length;
+  
+  context.beginPath();
+  context.strokeStyle = '#2a2a2a';
+  context.lineWidth = 1;
+
+  NOTES.forEach((note, index) => {
+    const y = index * noteHeight;
+    
+    // Draw line
+    context.moveTo(0, y);
+    context.lineTo(width, y);
+    
+    // Draw note label
+    context.fillStyle = '#666';
+    context.font = '12px monospace';
+    context.fillText(note, 5, y + 15);
+  });
+  
+  context.stroke();
+};
+
 export const drawCurve = (
   context: CanvasRenderingContext2D,
   points: Point[],
   canvasWidth: number,
   canvasHeight: number
 ) => {
-  // Clear canvas
-  context.clearRect(0, 0, canvasWidth, canvasHeight);
+  // Draw grid first
+  drawGrid(context, canvasWidth, canvasHeight);
 
   // Draw curve
   if (points.length > 1) {
@@ -51,7 +84,7 @@ export const drawCurve = (
       }
     }
 
-    context.strokeStyle = '#ffffff';
+    context.strokeStyle = '#00ff88';
     context.lineWidth = 2;
     context.stroke();
   }
@@ -62,5 +95,8 @@ export const drawCurve = (
     context.arc(point.x, point.y, 5, 0, Math.PI * 2);
     context.fillStyle = '#00ff88';
     context.fill();
+    context.strokeStyle = '#003311';
+    context.lineWidth = 2;
+    context.stroke();
   });
 };
