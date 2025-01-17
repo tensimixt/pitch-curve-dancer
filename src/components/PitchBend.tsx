@@ -82,9 +82,6 @@ const PitchBend = () => {
                 }`}>
                   {note}
                 </div>
-                {isBlackKey && (
-                  <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gray-900 border-l border-gray-700" />
-                )}
               </div>
             ))}
           </div>
