@@ -11,7 +11,7 @@ const UndoButton: React.FC<UndoButtonProps> = ({ onUndo, disabled }) => {
   return (
     <Button
       onClick={onUndo}
-      className="absolute top-4 right-4"
+      className="fixed top-4 right-4 z-50"
       variant="secondary"
       disabled={disabled}
     >

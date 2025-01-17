@@ -50,17 +50,20 @@ const PitchBend = () => {
   }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
-    <ScrollArea className="h-[550px] w-full rounded-md border">
-      <div className="relative min-h-[1100px] w-[10000px]">
-        <canvas 
-          ref={canvasRef}
-          className="w-full h-full rounded-lg bg-gray-900"
-        />
-        <div className="absolute top-4 right-4">
-          <UndoButton onUndo={handleUndo} disabled={historyIndex === 0} />
+    <div className="relative h-[550px] w-full rounded-md border">
+      <ScrollArea className="h-full w-full">
+        <div className="relative h-[1100px] w-[10000px]">
+          <canvas 
+            ref={canvasRef}
+            className="absolute top-0 left-0 w-full h-full rounded-lg bg-gray-900"
+          />
         </div>
-      </div>
-    </ScrollArea>
+      </ScrollArea>
+      <UndoButton 
+        onUndo={handleUndo} 
+        disabled={historyIndex === 0} 
+      />
+    </div>
   );
 };
 
