@@ -4,7 +4,10 @@ import * as PIXI from 'pixi.js';
 interface Point {
   x: number;
   y: number;
-  sprite: PIXI.Sprite;
+  sprite: PIXI.Sprite & {
+    data: PIXI.FederatedPointerEvent['data'] | null;
+    dragging: boolean;
+  };
 }
 
 const PitchBend = () => {
@@ -54,12 +57,14 @@ const PitchBend = () => {
       .drawCircle(0, 0, 8)
       .endFill();
 
-    const sprite = new PIXI.Sprite(appRef.current.renderer.generateTexture(pointTexture));
+    const sprite = new PIXI.Sprite(appRef.current.renderer.generateTexture(pointTexture)) as Point['sprite'];
     sprite.x = x;
     sprite.y = y;
     sprite.anchor.set(0.5);
     sprite.eventMode = 'static';
     sprite.cursor = 'pointer';
+    sprite.data = null;
+    sprite.dragging = false;
 
     // Make point draggable
     sprite
@@ -100,21 +105,21 @@ const PitchBend = () => {
   };
 
   const onDragStart = (event: PIXI.FederatedPointerEvent) => {
-    const sprite = event.currentTarget as PIXI.Sprite;
+    const sprite = event.currentTarget as Point['sprite'];
     sprite.alpha = 0.8;
     sprite.data = event.data;
     sprite.dragging = true;
   };
 
   const onDragEnd = (event: PIXI.FederatedPointerEvent) => {
-    const sprite = event.currentTarget as PIXI.Sprite;
+    const sprite = event.currentTarget as Point['sprite'];
     sprite.alpha = 1;
     sprite.dragging = false;
     sprite.data = null;
   };
 
   const onDragMove = (event: PIXI.FederatedPointerEvent) => {
-    const sprite = event.currentTarget as PIXI.Sprite;
+    const sprite = event.currentTarget as Point['sprite'];
     if (sprite.dragging) {
       const newPosition = sprite.data?.getLocalPosition(sprite.parent);
       if (newPosition) {
