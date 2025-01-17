@@ -26,7 +26,7 @@ const PitchBend = () => {
   const addPoint = useCallback((x: number, y: number) => {
     if (!scene || !isReady) return;
 
-    const geometry = new THREE.SphereGeometry(0.1);
+    const geometry = new THREE.SphereGeometry(0.05);
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(x, y, 0);
@@ -35,19 +35,25 @@ const PitchBend = () => {
     const point = { x, y, mesh };
     pointsRef.current.push(point);
     updateCurve();
+
+    // Debug log
+    console.log('Added point at:', { x, y });
   }, [scene, updateCurve, isReady]);
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
     if (!scene) return;
-    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+    const canvas = e.target as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    
+    // Convert mouse coordinates to normalized device coordinates (-1 to +1)
     const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
 
     // Check if clicking on existing point
     const point = pointsRef.current.find(p => {
       const dx = p.x - x;
       const dy = p.y - y;
-      return Math.sqrt(dx * dx + dy * dy) < 0.2;
+      return Math.sqrt(dx * dx + dy * dy) < 0.1;
     });
 
     if (point) {
@@ -61,9 +67,11 @@ const PitchBend = () => {
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || !dragPointRef.current) return;
 
-    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+    const canvas = e.target as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    
     const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
 
     dragPointRef.current.x = x;
     dragPointRef.current.y = y;
