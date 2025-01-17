@@ -2,10 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useCanvas } from '@/hooks/useCanvas';
 import { drawCurve } from '@/utils/curveUtils';
 import { Point } from '@/types/canvas';
+import { Button } from '@/components/ui/button';
+import { Undo } from 'lucide-react';
 
 const PitchBend = () => {
   const { canvasRef, context } = useCanvas();
   const [points, setPoints] = useState<Point[]>([]);
+  const [pointsHistory, setPointsHistory] = useState<Point[][]>([[]]);
+  const [historyIndex, setHistoryIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPointIndex, setDragPointIndex] = useState<number | null>(null);
 
@@ -35,7 +39,6 @@ const PitchBend = () => {
       const p1 = points[i];
       const p2 = points[i + 1];
 
-      // Calculate distance from point to line segment
       const A = pos.x - p1.x;
       const B = pos.y - p1.y;
       const C = p2.x - p1.x;
@@ -72,6 +75,20 @@ const PitchBend = () => {
     return { isNear: false, insertIndex: points.length };
   };
 
+  const addToHistory = (newPoints: Point[]) => {
+    const newHistory = pointsHistory.slice(0, historyIndex + 1);
+    newHistory.push([...newPoints]);
+    setPointsHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(historyIndex - 1);
+      setPoints([...pointsHistory[historyIndex - 1]]);
+    }
+  };
+
   const handleMouseDown = useCallback((e: MouseEvent) => {
     const pos = getMousePos(e);
     const pointIndex = findNearestPoint(pos);
@@ -82,31 +99,37 @@ const PitchBend = () => {
     } else {
       const { isNear, insertIndex } = isPointNearCurve(pos);
       if (isNear) {
-        // Insert point at the correct position in the array
         const newPoints = [...points];
         newPoints.splice(insertIndex, 0, pos);
         setPoints(newPoints);
+        addToHistory(newPoints);
         console.log('Added point on curve at:', pos);
       } else {
-        setPoints(prev => [...prev, pos]);
+        const newPoints = [...points, pos];
+        setPoints(newPoints);
+        addToHistory(newPoints);
         console.log('Added new point at:', pos);
       }
     }
-  }, [points]);
+  }, [points, pointsHistory, historyIndex]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || dragPointIndex === null) return;
     
     const pos = getMousePos(e);
-    setPoints(prev => prev.map((p, i) => 
+    const newPoints = points.map((p, i) => 
       i === dragPointIndex ? pos : p
-    ));
-  }, [isDragging, dragPointIndex]);
+    );
+    setPoints(newPoints);
+  }, [isDragging, dragPointIndex, points]);
 
   const handleMouseUp = useCallback(() => {
+    if (isDragging && dragPointIndex !== null) {
+      addToHistory([...points]);
+    }
     setIsDragging(false);
     setDragPointIndex(null);
-  }, []);
+  }, [isDragging, dragPointIndex, points]);
 
   useEffect(() => {
     if (!context || !canvasRef.current) return;
@@ -131,10 +154,21 @@ const PitchBend = () => {
   }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
-    <canvas 
-      ref={canvasRef}
-      className="w-full h-[500px] rounded-lg bg-gray-900"
-    />
+    <div className="relative">
+      <canvas 
+        ref={canvasRef}
+        className="w-full h-[500px] rounded-lg bg-gray-900"
+      />
+      <Button
+        onClick={handleUndo}
+        className="absolute top-4 right-4"
+        variant="secondary"
+        disabled={historyIndex === 0}
+      >
+        <Undo className="w-4 h-4 mr-2" />
+        Undo
+      </Button>
+    </div>
   );
 };
 
