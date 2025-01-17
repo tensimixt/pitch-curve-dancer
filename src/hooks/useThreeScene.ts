@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 export const useThreeScene = (containerRef: RefObject<HTMLDivElement>) => {
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const curveRef = useRef<THREE.Line | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -15,10 +15,14 @@ export const useThreeScene = (containerRef: RefObject<HTMLDivElement>) => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#1a1a1a');
 
-    // Setup camera
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
+    // Setup orthographic camera for 2D-like view
+    const aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+    const frustumSize = 2;
+    const camera = new THREE.OrthographicCamera(
+      -aspect * frustumSize / 2,
+      aspect * frustumSize / 2,
+      frustumSize / 2,
+      -frustumSize / 2,
       0.1,
       1000
     );
@@ -27,7 +31,11 @@ export const useThreeScene = (containerRef: RefObject<HTMLDivElement>) => {
     // Setup renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
     containerRef.current.appendChild(renderer.domElement);
+
+    // Store scene in userData for easy access
+    renderer.userData = { scene };
 
     // Create curve
     const curve = new THREE.Line(
@@ -47,8 +55,14 @@ export const useThreeScene = (containerRef: RefObject<HTMLDivElement>) => {
     const handleResize = () => {
       if (!containerRef.current || !camera || !renderer) return;
       
-      camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+      const newAspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+      
+      camera.left = -newAspect * frustumSize / 2;
+      camera.right = newAspect * frustumSize / 2;
+      camera.top = frustumSize / 2;
+      camera.bottom = -frustumSize / 2;
       camera.updateProjectionMatrix();
+      
       renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
     };
 
