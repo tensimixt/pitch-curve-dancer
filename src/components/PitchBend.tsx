@@ -26,36 +26,46 @@ const PitchBend = () => {
       antialias: true,
     });
 
+    // Store the app reference immediately
+    appRef.current = app;
+
+    // Create a function to handle clicks that we can reference for cleanup
+    const handleClick = (e: MouseEvent) => {
+      if (!appRef.current?.view || e.target !== appRef.current.view) return;
+      const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      addPoint(x, y);
+    };
+
     // Wait for the application to be properly initialized
     requestAnimationFrame(() => {
-      if (!containerRef.current) return;
-      containerRef.current.appendChild(app.view as HTMLCanvasElement);
-      appRef.current = app;
+      if (!containerRef.current || !appRef.current) return;
+      
+      containerRef.current.appendChild(appRef.current.view as HTMLCanvasElement);
 
       // Create graphics for the curve
       const graphics = new PIXI.Graphics();
-      app.stage.addChild(graphics);
+      appRef.current.stage.addChild(graphics);
       graphicsRef.current = graphics;
 
-      // Handle click to add points
-      const handleClick = (e: MouseEvent) => {
-        if (!app.view || e.target !== app.view) return;
-        const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        addPoint(x, y);
-      };
-
-      if (app.view) {
-        app.view.addEventListener('click', handleClick);
+      // Add click listener only after view is properly mounted
+      if (appRef.current.view) {
+        appRef.current.view.addEventListener('click', handleClick);
       }
     });
 
     return () => {
+      // Clean up event listener if it exists
+      if (appRef.current?.view) {
+        appRef.current.view.removeEventListener('click', handleClick);
+      }
+
+      // Properly remove the canvas and destroy the app
       if (appRef.current) {
         const view = appRef.current.view;
-        if (view instanceof HTMLCanvasElement) {
-          view.parentNode?.removeChild(view);
+        if (view instanceof HTMLCanvasElement && view.parentNode) {
+          view.parentNode.removeChild(view);
         }
         appRef.current.destroy(true);
         appRef.current = null;
