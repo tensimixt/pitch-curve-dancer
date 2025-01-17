@@ -1,93 +1,119 @@
-import React, { useRef, useCallback, useState } from 'react';
-import * as THREE from 'three';
-import { useThreeScene } from '../hooks/useThreeScene';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 
 interface Point {
   x: number;
   y: number;
-  mesh: THREE.Mesh;
 }
 
 const PitchBend = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const pointsRef = useRef<Point[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [points, setPoints] = useState<Point[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const dragPointRef = useRef<Point | null>(null);
-  const { scene, curve, isReady } = useThreeScene(containerRef);
+  const [dragPointIndex, setDragPointIndex] = useState<number | null>(null);
+  const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
 
-  const updateCurve = useCallback(() => {
-    if (!curve || pointsRef.current.length < 2) return;
+  // Initialize canvas context
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
 
-    const points = pointsRef.current.map(p => new THREE.Vector3(p.x, p.y, 0));
-    curve.geometry.dispose();
-    curve.geometry = new THREE.BufferGeometry().setFromPoints(points);
-  }, [curve]);
+    // Set canvas size
+    const resizeCanvas = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+    };
 
-  const addPoint = useCallback((x: number, y: number) => {
-    if (!scene || !isReady) return;
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    setContext(ctx);
 
-    const geometry = new THREE.SphereGeometry(0.05);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(x, y, 0);
-    scene.add(mesh);
+    return () => window.removeEventListener('resize', resizeCanvas);
+  }, []);
 
-    const point = { x, y, mesh };
-    pointsRef.current.push(point);
-    updateCurve();
+  // Draw function
+  const draw = useCallback(() => {
+    if (!context || !canvasRef.current) return;
 
-    // Debug log
-    console.log('Added point at:', { x, y });
-  }, [scene, updateCurve, isReady]);
+    // Clear canvas
+    context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+
+    // Draw curve
+    if (points.length > 1) {
+      context.beginPath();
+      context.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        context.lineTo(points[i].x, points[i].y);
+      }
+      context.strokeStyle = '#ffffff';
+      context.lineWidth = 2;
+      context.stroke();
+    }
+
+    // Draw points
+    points.forEach((point) => {
+      context.beginPath();
+      context.arc(point.x, point.y, 5, 0, Math.PI * 2);
+      context.fillStyle = '#00ff88';
+      context.fill();
+    });
+  }, [points, context]);
+
+  // Draw whenever points change
+  useEffect(() => {
+    draw();
+  }, [points, draw]);
+
+  const getMousePos = (e: MouseEvent): Point => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  };
+
+  const findNearestPoint = (pos: Point): number | null => {
+    for (let i = 0; i < points.length; i++) {
+      const dx = points[i].x - pos.x;
+      const dy = points[i].y - pos.y;
+      if (Math.sqrt(dx * dx + dy * dy) < 10) {
+        return i;
+      }
+    }
+    return null;
+  };
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
-    if (!scene) return;
-    const canvas = e.target as HTMLCanvasElement;
-    const rect = canvas.getBoundingClientRect();
-    
-    // Convert mouse coordinates to normalized device coordinates (-1 to +1)
-    const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+    const pos = getMousePos(e);
+    const pointIndex = findNearestPoint(pos);
 
-    // Check if clicking on existing point
-    const point = pointsRef.current.find(p => {
-      const dx = p.x - x;
-      const dy = p.y - y;
-      return Math.sqrt(dx * dx + dy * dy) < 0.1;
-    });
-
-    if (point) {
+    if (pointIndex !== null) {
       setIsDragging(true);
-      dragPointRef.current = point;
+      setDragPointIndex(pointIndex);
     } else {
-      addPoint(x, y);
+      setPoints(prev => [...prev, pos]);
+      console.log('Added point at:', pos);
     }
-  }, [scene, addPoint]);
+  }, [points]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging || !dragPointRef.current) return;
-
-    const canvas = e.target as HTMLCanvasElement;
-    const rect = canvas.getBoundingClientRect();
+    if (!isDragging || dragPointIndex === null) return;
     
-    const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-
-    dragPointRef.current.x = x;
-    dragPointRef.current.y = y;
-    dragPointRef.current.mesh.position.set(x, y, 0);
-    updateCurve();
-  }, [isDragging, updateCurve]);
+    const pos = getMousePos(e);
+    setPoints(prev => prev.map((p, i) => 
+      i === dragPointIndex ? pos : p
+    ));
+  }, [isDragging, dragPointIndex]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-    dragPointRef.current = null;
+    setDragPointIndex(null);
   }, []);
 
-  React.useEffect(() => {
-    if (!scene || !isReady) return;
-    
-    const canvas = scene.userData.renderer?.domElement;
+  useEffect(() => {
+    const canvas = canvasRef.current;
     if (!canvas) return;
 
     canvas.addEventListener('mousedown', handleMouseDown);
@@ -101,12 +127,12 @@ const PitchBend = () => {
       canvas.removeEventListener('mouseup', handleMouseUp);
       canvas.removeEventListener('mouseleave', handleMouseUp);
     };
-  }, [scene, handleMouseDown, handleMouseMove, handleMouseUp, isReady]);
+  }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
-    <div 
-      ref={containerRef} 
-      className="w-full h-[500px] rounded-lg overflow-hidden"
+    <canvas 
+      ref={canvasRef}
+      className="w-full h-[500px] rounded-lg bg-gray-900"
     />
   );
 };
