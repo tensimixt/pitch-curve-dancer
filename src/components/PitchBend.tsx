@@ -1,96 +1,13 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-
-interface Point {
-  x: number;
-  y: number;
-}
+import React, { useEffect, useState, useCallback } from 'react';
+import { useCanvas } from '@/hooks/useCanvas';
+import { drawCurve } from '@/utils/curveUtils';
+import { Point } from '@/types/canvas';
 
 const PitchBend = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { canvasRef, context } = useCanvas();
   const [points, setPoints] = useState<Point[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPointIndex, setDragPointIndex] = useState<number | null>(null);
-  const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
-
-  // Initialize canvas context
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-
-    // Set canvas size
-    const resizeCanvas = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      canvas.width = canvas.clientWidth;
-      canvas.height = canvas.clientHeight;
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-    setContext(ctx);
-
-    return () => window.removeEventListener('resize', resizeCanvas);
-  }, []);
-
-  // Draw function
-  const draw = useCallback(() => {
-    if (!context || !canvasRef.current) return;
-
-    // Clear canvas
-    context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-
-    // Draw curve
-    if (points.length > 1) {
-      context.beginPath();
-      context.moveTo(points[0].x, points[0].y);
-
-      // Draw smooth curve through points
-      for (let i = 0; i < points.length - 1; i++) {
-        const currentPoint = points[i];
-        const nextPoint = points[i + 1];
-        
-        // Calculate control points
-        const midX = (currentPoint.x + nextPoint.x) / 2;
-        const midY = (currentPoint.y + nextPoint.y) / 2;
-        
-        if (i === 0) {
-          // First segment
-          context.quadraticCurveTo(
-            currentPoint.x,
-            currentPoint.y,
-            midX,
-            midY
-          );
-        }
-        
-        // Draw curve to midpoint using the next point as control point
-        context.quadraticCurveTo(
-          nextPoint.x,
-          nextPoint.y,
-          nextPoint.x,
-          nextPoint.y
-        );
-      }
-
-      context.strokeStyle = '#ffffff';
-      context.lineWidth = 2;
-      context.stroke();
-    }
-
-    // Draw points
-    points.forEach((point) => {
-      context.beginPath();
-      context.arc(point.x, point.y, 5, 0, Math.PI * 2);
-      context.fillStyle = '#00ff88';
-      context.fill();
-    });
-  }, [points, context]);
-
-  // Draw whenever points change
-  useEffect(() => {
-    draw();
-  }, [points, draw]);
 
   const getMousePos = (e: MouseEvent): Point => {
     const rect = canvasRef.current!.getBoundingClientRect();
@@ -137,6 +54,11 @@ const PitchBend = () => {
     setIsDragging(false);
     setDragPointIndex(null);
   }, []);
+
+  useEffect(() => {
+    if (!context || !canvasRef.current) return;
+    drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
+  }, [points, context]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
