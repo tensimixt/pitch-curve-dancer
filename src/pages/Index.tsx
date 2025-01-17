@@ -1,11 +1,16 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import PitchBend from "@/components/PitchBend";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-gray-900 p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold text-white mb-8">Pitch Bend Controller</h1>
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <PitchBend />
+        </div>
+        <p className="text-gray-400 mt-4 text-center">
+          Click anywhere to add points. Drag points to adjust the curve.
+        </p>
       </div>
     </div>
   );
