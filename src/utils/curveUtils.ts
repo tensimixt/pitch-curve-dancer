@@ -18,16 +18,10 @@ export const drawGrid = (
   context.clearRect(0, 0, width, height);
 
   // Draw horizontal lines for each note
-  const noteHeight = 25; // Fixed height per note
+  const noteHeight = 25; // This matches the piano key height from PitchBend.tsx
   
   NOTES.forEach((note, index) => {
     const y = index * noteHeight;
-    
-    // Fill key background color for the entire row, skip first cell (index 0)
-    if (index > 0) {
-      context.fillStyle = isBlackKey(note) ? '#222222' : '#ffffff';
-      context.fillRect(0, y, 50, noteHeight);
-    }
     
     context.beginPath();
     context.strokeStyle = '#2a2a2a';
@@ -36,11 +30,6 @@ export const drawGrid = (
     context.lineTo(width, y);
     context.stroke();
     
-    // Draw note label with contrasting color
-    context.fillStyle = isBlackKey(note) ? '#ffffff' : '#666666';
-    context.font = '12px monospace';
-    context.fillText(note, 5, y + 15);
-
     // Highlight C notes with a slightly brighter line
     if (note.startsWith('C')) {
       context.beginPath();
