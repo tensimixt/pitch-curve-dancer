@@ -35,16 +35,24 @@ const PitchBend = () => {
     graphicsRef.current = graphics;
 
     // Handle click to add points
-    app.view.addEventListener('click', (e) => {
-      if (e.target !== app.view) return;
+    const handleClick = (e: MouseEvent) => {
+      if (!app.view || e.target !== app.view) return;
       const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       addPoint(x, y);
-    });
+    };
+
+    app.view.addEventListener('click', handleClick);
 
     return () => {
-      app.destroy(true);
+      if (app.view) {
+        app.view.removeEventListener('click', handleClick);
+      }
+      if (appRef.current) {
+        appRef.current.destroy(true);
+        appRef.current = null;
+      }
     };
   }, []);
 
