@@ -39,6 +39,7 @@ const PitchBend = () => {
       const p1 = points[i];
       const p2 = points[i + 1];
 
+      // Calculate the distance from point to line segment
       const A = pos.x - p1.x;
       const B = pos.y - p1.y;
       const C = p2.x - p1.x;
@@ -67,7 +68,8 @@ const PitchBend = () => {
       const dy = pos.y - yy;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance < 10) {
+      // Increased detection threshold for better usability
+      if (distance < 15 && param >= 0 && param <= 1) {
         return { isNear: true, insertIndex: i + 1 };
       }
     }
