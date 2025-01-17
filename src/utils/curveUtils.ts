@@ -7,6 +7,8 @@ const NOTES = [
   'B3', 'A#3', 'A3', 'G#3', 'G3', 'F#3', 'F3', 'E3', 'D#3', 'D3', 'C#3', 'C3'
 ];
 
+const isBlackKey = (note: string) => note.includes('#');
+
 export const drawGrid = (
   context: CanvasRenderingContext2D,
   width: number,
@@ -15,31 +17,36 @@ export const drawGrid = (
   // Clear canvas
   context.clearRect(0, 0, width, height);
 
-  // Draw horizontal lines for each note
+  // Draw horizontal lines and background for each note
   const noteHeight = 25; // Fixed height per note
   
-  context.beginPath();
-  context.strokeStyle = '#2a2a2a';
-  context.lineWidth = 1;
-
   NOTES.forEach((note, index) => {
     const y = index * noteHeight;
     
-    // Draw line
+    // Fill background color based on note type
+    context.fillStyle = isBlackKey(note) ? '#222222' : '#ffffff';
+    context.fillRect(0, y, width, noteHeight);
+    
+    // Draw horizontal line
+    context.beginPath();
+    context.strokeStyle = '#2a2a2a';
+    context.lineWidth = 1;
     context.moveTo(0, y);
     context.lineTo(width, y);
+    context.stroke();
     
-    // Draw note label
-    context.fillStyle = '#666';
+    // Draw note label with contrasting color
+    context.fillStyle = isBlackKey(note) ? '#ffffff' : '#666666';
     context.font = '12px monospace';
     context.fillText(note, 5, y + 15);
 
     // Highlight C notes with a slightly brighter line
     if (note.startsWith('C')) {
+      context.beginPath();
       context.strokeStyle = '#3a3a3a';
       context.moveTo(0, y);
       context.lineTo(width, y);
-      context.strokeStyle = '#2a2a2a';
+      context.stroke();
     }
   });
   
@@ -47,13 +54,16 @@ export const drawGrid = (
   const timeMarkerWidth = 100; // pixels per time unit
   const totalTimeMarkers = Math.ceil(width / timeMarkerWidth);
   
+  context.beginPath();
+  context.strokeStyle = '#2a2a2a';
+  
   for (let i = 0; i <= totalTimeMarkers; i++) {
     const x = i * timeMarkerWidth;
     context.moveTo(x, 0);
     context.lineTo(x, height);
     
     // Add time marker label
-    context.fillStyle = '#666';
+    context.fillStyle = '#666666';
     context.fillText(`${i}s`, x + 5, 15);
   }
   
