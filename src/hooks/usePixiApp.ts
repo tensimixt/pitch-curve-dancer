@@ -7,68 +7,60 @@ export const usePixiApp = (containerRef: RefObject<HTMLDivElement>) => {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    let isActive = true;
+    if (!containerRef.current) return;
 
-    const createApp = () => {
-      if (!containerRef.current || appRef.current) return;
+    // Create the PIXI application
+    const app = new PIXI.Application({
+      background: '#1a1a1a',
+      width: containerRef.current.clientWidth,
+      height: containerRef.current.clientHeight,
+      antialias: true,
+    });
 
-      // Create a new application
-      const app = new PIXI.Application({
-        background: '#1a1a1a',
-        resizeTo: containerRef.current,
-        antialias: true,
-      });
+    // Create the graphics object
+    const graphics = new PIXI.Graphics();
+    app.stage.addChild(graphics);
 
-      // Only proceed if the component is still mounted
-      if (!isActive) {
-        if (app.view) {
-          const canvas = app.view as HTMLCanvasElement;
-          canvas.parentNode?.removeChild(canvas);
-        }
-        app.destroy(true);
-        return;
-      }
+    // Store references
+    appRef.current = app;
+    graphicsRef.current = graphics;
 
-      appRef.current = app;
-      const graphics = new PIXI.Graphics();
-      app.stage.addChild(graphics);
-      graphicsRef.current = graphics;
+    // Append the canvas to the container
+    containerRef.current.appendChild(app.view as HTMLCanvasElement);
+    setIsReady(true);
 
-      // Ensure container exists before appending
-      if (containerRef.current && app.view) {
-        containerRef.current.appendChild(app.view as HTMLCanvasElement);
-        setIsReady(true);
-      }
+    // Handle resize
+    const handleResize = () => {
+      if (!containerRef.current || !app) return;
+      app.renderer.resize(
+        containerRef.current.clientWidth,
+        containerRef.current.clientHeight
+      );
     };
 
-    // Use requestAnimationFrame to ensure DOM is ready
-    requestAnimationFrame(createApp);
+    window.addEventListener('resize', handleResize);
 
+    // Cleanup function
     return () => {
-      isActive = false;
-      setIsReady(false);
-
+      window.removeEventListener('resize', handleResize);
+      
       if (graphicsRef.current) {
         graphicsRef.current.destroy();
         graphicsRef.current = null;
       }
 
       if (appRef.current) {
-        if (appRef.current.view) {
-          const canvas = appRef.current.view as HTMLCanvasElement;
-          if (canvas.parentNode) {
-            canvas.parentNode.removeChild(canvas);
-          }
-        }
-        appRef.current.destroy(true);
+        appRef.current.destroy(true, { children: true });
         appRef.current = null;
       }
+
+      setIsReady(false);
     };
   }, [containerRef]);
 
-  return { 
-    app: appRef.current, 
+  return {
+    app: appRef.current,
     graphics: graphicsRef.current,
-    isReady 
+    isReady
   };
 };
