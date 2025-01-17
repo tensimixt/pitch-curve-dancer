@@ -16,30 +16,38 @@ export const drawCurve = (
 
     // Draw smooth curve through points
     for (let i = 0; i < points.length - 1; i++) {
-      const currentPoint = points[i];
-      const nextPoint = points[i + 1];
+      const current = points[i];
+      const next = points[i + 1];
       
-      // Calculate control points
-      const midX = (currentPoint.x + nextPoint.x) / 2;
-      const midY = (currentPoint.y + nextPoint.y) / 2;
+      // Calculate control points for smoother curves
+      let cp1x, cp1y, cp2x, cp2y;
       
+      // If it's the first segment
       if (i === 0) {
-        // First segment
-        context.quadraticCurveTo(
-          currentPoint.x,
-          currentPoint.y,
-          midX,
-          midY
-        );
+        // Control points for first segment
+        cp1x = current.x + (next.x - current.x) / 3;
+        cp1y = current.y + (next.y - current.y) / 3;
+        cp2x = next.x - (next.x - current.x) / 3;
+        cp2y = next.y - (next.y - current.y) / 3;
+      } else {
+        // Calculate control points based on previous and next points
+        const prev = points[i - 1];
+        
+        // Calculate the direction vector
+        const dx = next.x - prev.x;
+        const dy = next.y - prev.y;
+        
+        // First control point
+        cp1x = current.x + dx / 4;
+        cp1y = current.y + dy / 4;
+        
+        // Second control point
+        cp2x = next.x - dx / 4;
+        cp2y = next.y - dy / 4;
       }
       
-      // Draw curve to midpoint using the next point as control point
-      context.quadraticCurveTo(
-        nextPoint.x,
-        nextPoint.y,
-        nextPoint.x,
-        nextPoint.y
-      );
+      // Draw the bezier curve segment
+      context.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
     }
 
     context.strokeStyle = '#ffffff';
