@@ -13,8 +13,8 @@ export const useCanvas = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       
-      // Set canvas width to a fixed larger value for horizontal scrolling
-      canvas.width = 2000;
+      // Set canvas width to a much larger value for extended horizontal scrolling
+      canvas.width = 10000;
       
       // Calculate height based on number of notes (25px per note)
       const numberOfNotes = 44; // Total number of notes in our scale

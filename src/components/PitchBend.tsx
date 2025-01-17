@@ -50,8 +50,8 @@ const PitchBend = () => {
   }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
-    <ScrollArea className="h-[550px] w-full" orientation="both">
-      <div className="relative min-h-[1100px] min-w-[2000px]">
+    <ScrollArea className="h-[550px] w-full">
+      <div className="relative min-h-[1100px] min-w-[10000px]">
         <canvas 
           ref={canvasRef}
           className="w-full h-full rounded-lg bg-gray-900"
