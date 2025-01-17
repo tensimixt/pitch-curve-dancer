@@ -23,9 +23,11 @@ export const drawGrid = (
   NOTES.forEach((note, index) => {
     const y = index * noteHeight;
     
-    // Fill key background color for the entire row
-    context.fillStyle = isBlackKey(note) ? '#222222' : '#ffffff';
-    context.fillRect(0, y, 50, noteHeight);
+    // Fill key background color for the entire row, skip first cell (index 0)
+    if (index > 0) {
+      context.fillStyle = isBlackKey(note) ? '#222222' : '#ffffff';
+      context.fillRect(0, y, 50, noteHeight);
+    }
     
     context.beginPath();
     context.strokeStyle = '#2a2a2a';
