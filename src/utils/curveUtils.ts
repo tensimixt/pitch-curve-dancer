@@ -14,40 +14,41 @@ export const drawCurve = (
     context.beginPath();
     context.moveTo(points[0].x, points[0].y);
 
-    // Draw smooth curve through points
-    for (let i = 0; i < points.length - 1; i++) {
-      const current = points[i];
-      const next = points[i + 1];
-      
-      // Calculate control points for smoother curves
-      let cp1x, cp1y, cp2x, cp2y;
-      
-      // If it's the first segment
-      if (i === 0) {
-        // Control points for first segment
-        cp1x = current.x + (next.x - current.x) / 3;
-        cp1y = current.y + (next.y - current.y) / 3;
-        cp2x = next.x - (next.x - current.x) / 3;
-        cp2y = next.y - (next.y - current.y) / 3;
-      } else {
-        // Calculate control points based on previous and next points
-        const prev = points[i - 1];
+    if (points.length === 2) {
+      // For just 2 points, draw a straight line
+      context.lineTo(points[1].x, points[1].y);
+    } else {
+      // For 3 or more points, create smooth curves
+      for (let i = 0; i < points.length - 1; i++) {
+        const curr = points[i];
+        const next = points[i + 1];
         
-        // Calculate the direction vector
-        const dx = next.x - prev.x;
-        const dy = next.y - prev.y;
-        
-        // First control point
-        cp1x = current.x + dx / 4;
-        cp1y = current.y + dy / 4;
-        
-        // Second control point
-        cp2x = next.x - dx / 4;
-        cp2y = next.y - dy / 4;
+        if (i === 0) {
+          // First segment
+          const afterNext = points[i + 2];
+          const controlX = next.x - (afterNext.x - curr.x) * 0.2;
+          const controlY = next.y - (afterNext.y - curr.y) * 0.2;
+          context.quadraticCurveTo(controlX, controlY, next.x, next.y);
+        } else if (i === points.length - 2) {
+          // Last segment
+          const prev = points[i - 1];
+          const controlX = curr.x + (next.x - prev.x) * 0.2;
+          const controlY = curr.y + (next.y - prev.y) * 0.2;
+          context.quadraticCurveTo(controlX, controlY, next.x, next.y);
+        } else {
+          // Middle segments
+          const prev = points[i - 1];
+          const afterNext = points[i + 2];
+          
+          // Calculate control points based on surrounding points
+          const controlX1 = curr.x + (next.x - prev.x) * 0.2;
+          const controlY1 = curr.y + (next.y - prev.y) * 0.2;
+          const controlX2 = next.x - (afterNext.x - curr.x) * 0.2;
+          const controlY2 = next.y - (afterNext.y - curr.y) * 0.2;
+          
+          context.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, next.x, next.y);
+        }
       }
-      
-      // Draw the bezier curve segment
-      context.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
     }
 
     context.strokeStyle = '#ffffff';
