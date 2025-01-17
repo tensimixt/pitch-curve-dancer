@@ -61,7 +61,7 @@ const PitchBend = () => {
       <ScrollArea className="h-full" orientation="horizontal">
         <div className="flex h-[1100px] w-[10000px]">
           {/* Fixed piano keys column */}
-          <div className="sticky left-0 w-16 flex-shrink-0 bg-gray-800">
+          <div className="sticky left-0 w-16 flex-shrink-0 bg-gray-800 z-50">
             {pianoKeys.map(({ note, isBlackKey }, i) => (
               <div 
                 key={i} 
