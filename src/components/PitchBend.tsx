@@ -15,9 +15,10 @@ const PitchBend = () => {
   const appRef = useRef<PIXI.Application | null>(null);
   const pointsRef = useRef<Point[]>([]);
   const graphicsRef = useRef<PIXI.Graphics | null>(null);
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || isInitializedRef.current) return;
 
     // Create PIXI Application
     const app = new PIXI.Application({
@@ -26,8 +27,13 @@ const PitchBend = () => {
       antialias: true,
     });
 
-    // Store the app reference immediately
+    // Store the app reference
     appRef.current = app;
+
+    // Create graphics for the curve
+    const graphics = new PIXI.Graphics();
+    app.stage.addChild(graphics);
+    graphicsRef.current = graphics;
 
     // Create a function to handle clicks that we can reference for cleanup
     const handleClick = (e: MouseEvent) => {
@@ -39,40 +45,30 @@ const PitchBend = () => {
       addPoint(x, y);
     };
 
-    // Wait for the application to be properly initialized
+    // Initialize the app
     const initApp = () => {
-      const currentApp = appRef.current;
-      if (!containerRef.current || !currentApp?.view) return;
-      
-      containerRef.current.appendChild(currentApp.view as HTMLCanvasElement);
-
-      // Create graphics for the curve
-      const graphics = new PIXI.Graphics();
-      currentApp.stage.addChild(graphics);
-      graphicsRef.current = graphics;
-
-      // Add click listener only after view is properly mounted
-      currentApp.view.addEventListener('click', handleClick);
+      if (!containerRef.current || !app.view) return;
+      containerRef.current.appendChild(app.view as HTMLCanvasElement);
+      app.view.addEventListener('click', handleClick);
+      isInitializedRef.current = true;
     };
 
     // Ensure the app is ready before initializing
     requestAnimationFrame(initApp);
 
     return () => {
-      const currentApp = appRef.current;
-      // Clean up event listener if it exists
-      if (currentApp?.view) {
-        currentApp.view.removeEventListener('click', handleClick);
+      if (appRef.current?.view) {
+        appRef.current.view.removeEventListener('click', handleClick);
       }
 
-      // Properly remove the canvas and destroy the app
-      if (currentApp) {
-        const view = currentApp.view;
+      if (appRef.current) {
+        const view = appRef.current.view;
         if (view instanceof HTMLCanvasElement && view.parentNode) {
           view.parentNode.removeChild(view);
         }
-        currentApp.destroy(true);
+        appRef.current.destroy(true);
         appRef.current = null;
+        isInitializedRef.current = false;
       }
     };
   }, []);
