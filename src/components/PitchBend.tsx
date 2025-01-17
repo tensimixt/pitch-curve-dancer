@@ -44,12 +44,18 @@ const PitchBend = () => {
       addPoint(x, y);
     };
 
-    // Initialize the app
+    // Initialize the app with a delay
     const initApp = () => {
       if (!containerRef.current || !app.view) return;
-      containerRef.current.appendChild(app.view as HTMLCanvasElement);
-      app.view.addEventListener('click', handleClick);
-      isInitializedRef.current = true;
+      
+      // Add a 2-second delay before initialization
+      setTimeout(() => {
+        if (containerRef.current && app.view) {
+          containerRef.current.appendChild(app.view as HTMLCanvasElement);
+          app.view.addEventListener('click', handleClick);
+          isInitializedRef.current = true;
+        }
+      }, 2000);
     };
 
     // Ensure the app is ready before initializing
@@ -58,8 +64,8 @@ const PitchBend = () => {
     // Cleanup function
     return () => {
       // Remove event listener if view exists
-      const view = appRef.current?.view as HTMLCanvasElement;
-      if (view) {
+      if (appRef.current?.view) {
+        const view = appRef.current.view as HTMLCanvasElement;
         view.removeEventListener('click', handleClick);
         if (view.parentNode) {
           view.parentNode.removeChild(view);
