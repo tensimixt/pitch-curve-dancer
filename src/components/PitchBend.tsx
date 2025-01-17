@@ -52,14 +52,14 @@ const PitchBend = () => {
   return (
     <div className="relative h-[550px] w-full rounded-md border">
       <div className="absolute left-0 top-0 bottom-0 w-12 bg-gray-800 z-10">
-        {/* Piano keys placeholder - we'll implement this later */}
+        {/* Piano keys */}
         <div className="h-full flex flex-col">
           {Array.from({ length: 44 }).map((_, i) => (
             <div 
               key={i} 
               className="h-[25px] border-b border-gray-700 flex items-center justify-center text-xs text-gray-400"
             >
-              {i}
+              {43 - i}
             </div>
           ))}
         </div>
