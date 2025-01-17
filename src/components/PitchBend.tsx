@@ -58,10 +58,10 @@ const PitchBend = () => {
 
   return (
     <div className="relative h-[550px] w-full rounded-md border">
-      <div className="flex h-full">
-        {/* Fixed piano keys column */}
-        <div className="w-16 flex-shrink-0 bg-gray-800 overflow-y-auto">
-          <div className="h-[1100px]">
+      <ScrollArea className="h-full" orientation="horizontal">
+        <div className="flex h-[1100px] w-[10000px]">
+          {/* Fixed piano keys column */}
+          <div className="sticky left-0 w-16 flex-shrink-0 bg-gray-800">
             {pianoKeys.map(({ note, isBlackKey }, i) => (
               <div 
                 key={i} 
@@ -80,20 +80,16 @@ const PitchBend = () => {
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Scrollable canvas area */}
-        <div className="flex-grow overflow-hidden">
-          <ScrollArea className="h-full" orientation="horizontal">
-            <div className="relative h-[1100px] w-[10000px]">
-              <canvas 
-                ref={canvasRef}
-                className="absolute top-0 left-0 w-full h-full rounded-lg bg-gray-900"
-              />
-            </div>
-          </ScrollArea>
+          {/* Canvas area */}
+          <div className="relative flex-grow">
+            <canvas 
+              ref={canvasRef}
+              className="absolute top-0 left-0 w-full h-full rounded-lg bg-gray-900"
+            />
+          </div>
         </div>
-      </div>
+      </ScrollArea>
       <UndoButton 
         onUndo={handleUndo} 
         disabled={historyIndex === 0} 
