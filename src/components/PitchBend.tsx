@@ -49,25 +49,17 @@ const PitchBend = () => {
     };
   }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
-  // Piano key data with note names
-  const getNoteLabel = (index: number): string => {
-    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const noteIndex = index % 12;
-    const octave = Math.floor(index / 12) - 1; // Starting from C-1
-    return `${notes[noteIndex]}${octave}`;
-  };
-
-  // Generate 132 keys (11 octaves * 12 notes = 132 keys from C-1 to B9)
-  const pianoKeys = Array.from({ length: 132 }).map((_, i) => {
-    const note = getNoteLabel(i);
-    const isBlackKey = note.includes('#');
+  // Piano key data
+  const pianoKeys = Array.from({ length: 44 }).map((_, i) => {
+    const note = 43 - i;
+    const isBlackKey = [1, 3, 6, 8, 10].includes(note % 12);
     return { note, isBlackKey };
   });
 
   return (
     <div className="relative h-[550px] w-full rounded-md border">
       <ScrollArea className="h-full" orientation="horizontal">
-        <div className="flex h-[3300px] w-[10000px]">
+        <div className="flex h-[1100px] w-[10000px]">
           {/* Fixed piano keys column */}
           <div className="sticky left-0 w-16 flex-shrink-0 bg-gray-800 z-50">
             {pianoKeys.map(({ note, isBlackKey }, i) => (
@@ -82,6 +74,9 @@ const PitchBend = () => {
                 }`}>
                   {note}
                 </div>
+                {isBlackKey && (
+                  <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gray-900 border-l border-gray-700" />
+                )}
               </div>
             ))}
           </div>
