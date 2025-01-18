@@ -1,8 +1,7 @@
-import { Point } from '@/types/canvas';
+import { Point, Note } from '@/types/canvas';
 
 const NOTES = [
-  'C7', 'B6', 'A#6', 'A6', 'G#6', 'G6', 'F#6', 'F6', 'E6', 'D#6', 'D6', 'C#6', 'C6',
-  'B5', 'A#5', 'A5', 'G#5', 'G5', 'F#5', 'F5', 'E5', 'D#5', 'D5', 'C#5', 'C5',
+  'C6', 'B5', 'A#5', 'A5', 'G#5', 'G5', 'F#5', 'F5', 'E5', 'D#5', 'D5', 'C#5', 'C5',
   'B4', 'A#4', 'A4', 'G#4', 'G4', 'F#4', 'F4', 'E4', 'D#4', 'D4', 'C#4', 'C4',
   'B3', 'A#3', 'A3', 'G#3', 'G3', 'F#3', 'F3', 'E3', 'D#3', 'D3', 'C#3', 'C3'
 ];
@@ -15,7 +14,6 @@ export const drawGrid = (
   // Clear canvas
   context.clearRect(0, 0, width, height);
 
-  // Draw horizontal lines for each note
   const noteHeight = 25; // Fixed height per note
   
   NOTES.forEach((note, index) => {
@@ -55,6 +53,7 @@ export const drawGrid = (
   context.stroke();
   
   // Add time marker labels
+  context.font = '12px monospace';
   for (let i = 0; i <= totalTimeMarkers; i++) {
     const x = i * timeMarkerWidth;
     context.fillStyle = '#666666';
@@ -68,41 +67,32 @@ export const drawCurve = (
   canvasWidth: number,
   canvasHeight: number
 ) => {
-  // Draw grid first
-  drawGrid(context, canvasWidth, canvasHeight);
-
   // Draw curve
   if (points.length > 1) {
     context.beginPath();
     context.moveTo(points[0].x, points[0].y);
 
     if (points.length === 2) {
-      // For just 2 points, draw a straight line
       context.lineTo(points[1].x, points[1].y);
     } else {
-      // For 3 or more points, create smooth curves
       for (let i = 0; i < points.length - 1; i++) {
         const curr = points[i];
         const next = points[i + 1];
         
         if (i === 0) {
-          // First segment
           const afterNext = points[i + 2];
           const controlX = next.x - (afterNext.x - curr.x) * 0.2;
           const controlY = next.y - (afterNext.y - curr.y) * 0.2;
           context.quadraticCurveTo(controlX, controlY, next.x, next.y);
         } else if (i === points.length - 2) {
-          // Last segment
           const prev = points[i - 1];
           const controlX = curr.x + (next.x - prev.x) * 0.2;
           const controlY = curr.y + (next.y - prev.y) * 0.2;
           context.quadraticCurveTo(controlX, controlY, next.x, next.y);
         } else {
-          // Middle segments
           const prev = points[i - 1];
           const afterNext = points[i + 2];
           
-          // Calculate control points based on surrounding points
           const controlX1 = curr.x + (next.x - prev.x) * 0.2;
           const controlY1 = curr.y + (next.y - prev.y) * 0.2;
           const controlX2 = next.x - (afterNext.x - curr.x) * 0.2;
@@ -127,5 +117,29 @@ export const drawCurve = (
     context.strokeStyle = '#003311';
     context.lineWidth = 2;
     context.stroke();
+  });
+};
+
+export const drawNotes = (
+  context: CanvasRenderingContext2D,
+  notes: Note[]
+) => {
+  notes.forEach(note => {
+    const noteHeight = 25;
+    const y = context.canvas.height - (note.pitch * noteHeight);
+    
+    // Draw note rectangle
+    context.fillStyle = 'rgba(0, 255, 136, 0.5)';
+    context.fillRect(note.startTime, y - (noteHeight / 2), note.duration, noteHeight);
+    
+    // Draw note border
+    context.strokeStyle = 'rgba(0, 255, 136, 0.8)';
+    context.lineWidth = 2;
+    context.strokeRect(note.startTime, y - (noteHeight / 2), note.duration, noteHeight);
+    
+    // Draw lyric
+    context.fillStyle = '#ffffff';
+    context.font = '12px monospace';
+    context.fillText(note.lyric, note.startTime + 5, y + 5);
   });
 };

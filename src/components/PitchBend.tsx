@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCanvas } from '@/hooks/useCanvas';
-import { drawCurve } from '@/utils/curveUtils';
+import { drawCurve, drawGrid, drawNotes } from '@/utils/curveUtils';
 import UndoButton from './UndoButton';
 import { usePointsHistory } from '@/hooks/usePointsHistory';
 import { usePointInteractions } from '@/hooks/usePointInteractions';
+import { useNotes } from '@/hooks/useNotes';
+import { Note } from '@/types/canvas';
 
 const PitchBend = () => {
   const { canvasRef, context } = useCanvas();
@@ -17,6 +19,17 @@ const PitchBend = () => {
   } = usePointsHistory();
 
   const {
+    notes,
+    selectedNote,
+    isDrawing,
+    drawStart,
+    setDrawStart,
+    setIsDrawing,
+    addNote,
+    selectNote
+  } = useNotes();
+
+  const {
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
@@ -27,32 +40,72 @@ const PitchBend = () => {
     canvasRef,
   });
 
+  const handleNoteMouseDown = (e: React.MouseEvent) => {
+    if (!canvasRef.current) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setDrawStart({ x, y });
+    setIsDrawing(true);
+  };
+
+  const handleNoteMouseMove = (e: React.MouseEvent) => {
+    if (!isDrawing || !drawStart || !canvasRef.current || !context) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const currentX = e.clientX - rect.left;
+    
+    // Clear and redraw
+    drawGrid(context, canvasRef.current.width, canvasRef.current.height);
+    drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
+    drawNotes(context, notes);
+    
+    // Draw preview rectangle
+    const width = currentX - drawStart.x;
+    const height = 25; // One note height
+    
+    context.fillStyle = 'rgba(0, 255, 136, 0.5)';
+    context.fillRect(drawStart.x, drawStart.y - (height / 2), width, height);
+  };
+
+  const handleNoteMouseUp = (e: React.MouseEvent) => {
+    if (!isDrawing || !drawStart || !canvasRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const endX = e.clientX - rect.left;
+    
+    // Calculate note properties
+    const noteHeight = 25;
+    const snapY = Math.round(drawStart.y / noteHeight) * noteHeight;
+    const pitch = Math.floor((canvasRef.current.height - snapY) / noteHeight);
+    
+    const newNote: Note = {
+      id: Date.now().toString(),
+      startTime: drawStart.x,
+      duration: endX - drawStart.x,
+      pitch,
+      lyric: 'a'
+    };
+
+    addNote(newNote);
+    setIsDrawing(false);
+    setDrawStart(null);
+  };
+
   useEffect(() => {
     if (!context || !canvasRef.current) return;
+    
+    drawGrid(context, canvasRef.current.width, canvasRef.current.height);
     drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
-  }, [points, context]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    canvas.addEventListener('mousedown', handleMouseDown);
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseup', handleMouseUp);
-    canvas.addEventListener('mouseleave', handleMouseUp);
-
-    return () => {
-      canvas.removeEventListener('mousedown', handleMouseDown);
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseup', handleMouseUp);
-      canvas.removeEventListener('mouseleave', handleMouseUp);
-    };
-  }, [handleMouseDown, handleMouseMove, handleMouseUp]);
+    drawNotes(context, notes);
+  }, [points, notes, context]);
 
   // Generate piano keys with note names
   const generateNoteNames = () => {
     const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const startOctave = 6;  // Starting from C6
+    const startOctave = 6;
     const totalKeys = 44;
     
     let currentOctave = startOctave;
@@ -107,6 +160,10 @@ const PitchBend = () => {
             <canvas 
               ref={canvasRef}
               className="absolute top-0 left-0 w-full h-full rounded-lg bg-gray-900"
+              onMouseDown={handleNoteMouseDown}
+              onMouseMove={handleNoteMouseMove}
+              onMouseUp={handleNoteMouseUp}
+              onMouseLeave={handleNoteMouseUp}
             />
           </div>
         </div>
