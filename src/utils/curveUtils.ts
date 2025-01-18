@@ -1,14 +1,17 @@
 import { Point, Note } from '@/types/canvas';
 
 const GRID_UNIT = 50; // Basic grid unit in pixels
-const MIN_NOTE_WIDTH = GRID_UNIT; // Minimum note width matches grid unit
 const NOTE_HEIGHT = 25; // Consistent note height matching piano keys
+const TICKS_PER_BEAT = 480; // Standard MIDI resolution
+const PIXELS_PER_TICK = GRID_UNIT / TICKS_PER_BEAT;
 
-const pixelsToCents = (pixelY: number, baseY: number): number => {
-  // Calculate cents based on pixel distance from base note
-  // 25 pixels = 100 cents (one semitone)
-  const pixelDistance = baseY - pixelY;
-  return Math.round((pixelDistance / NOTE_HEIGHT) * 100);
+// Common musical divisions (in ticks)
+const DIVISIONS = {
+  WHOLE: TICKS_PER_BEAT * 4,    // Whole note
+  HALF: TICKS_PER_BEAT * 2,     // Half note
+  QUARTER: TICKS_PER_BEAT,      // Quarter note (1 beat)
+  EIGHTH: TICKS_PER_BEAT / 2,   // Eighth note
+  SIXTEENTH: TICKS_PER_BEAT / 4 // Sixteenth note
 };
 
 export const drawGrid = (
@@ -28,35 +31,26 @@ export const drawGrid = (
     context.moveTo(0, y);
     context.lineTo(width, y);
     context.stroke();
-    
-    // Draw cents markers
-    context.beginPath();
-    context.strokeStyle = '#1a1a1a';
-    context.setLineDash([2, 2]);
-    // +50 cents line
-    context.moveTo(0, y - NOTE_HEIGHT/4);
-    context.lineTo(width, y - NOTE_HEIGHT/4);
-    // -50 cents line
-    context.moveTo(0, y + NOTE_HEIGHT/4);
-    context.lineTo(width, y + NOTE_HEIGHT/4);
-    context.stroke();
-    context.setLineDash([]);
   }
   
-  // Draw vertical grid lines
+  // Draw vertical beat lines and subdivisions
   for (let x = 0; x <= width; x += GRID_UNIT) {
+    const isBeatLine = x % (GRID_UNIT * 4) === 0;
+    const isHalfBeatLine = x % (GRID_UNIT * 2) === 0;
+    
     context.beginPath();
-    context.strokeStyle = '#2a2a2a';
-    context.lineWidth = 1;
+    context.strokeStyle = isBeatLine ? '#3a3a3a' : '#2a2a2a';
+    context.lineWidth = isBeatLine ? 2 : (isHalfBeatLine ? 1.5 : 1);
     context.moveTo(x, 0);
     context.lineTo(x, height);
     context.stroke();
     
-    // Add time markers
-    if (x % (GRID_UNIT * 4) === 0) {
+    // Add beat numbers
+    if (isBeatLine) {
       context.font = '12px monospace';
       context.fillStyle = '#666666';
-      context.fillText(`${x / GRID_UNIT / 4}s`, x + 5, 15);
+      const beatNumber = (x / GRID_UNIT / 4) + 1;
+      context.fillText(`${beatNumber}`, x + 5, 15);
     }
   }
 };
@@ -137,29 +131,32 @@ export const drawNotes = (
   notes: Note[]
 ) => {
   notes.forEach(note => {
-    // Calculate Y position to center the note within the grid rectangle
+    // Calculate Y position to align perfectly with grid lines
     const y = context.canvas.height - ((note.pitch + 0.5) * NOTE_HEIGHT);
     
     // Draw note rectangle with exact height matching piano keys
     context.fillStyle = 'rgba(0, 255, 136, 0.5)';
-    context.fillRect(note.startTime, y - (NOTE_HEIGHT / 2), note.duration, NOTE_HEIGHT);
+    context.fillRect(note.startTime, y, note.duration, NOTE_HEIGHT);
     
     // Draw note border
     context.strokeStyle = 'rgba(0, 255, 136, 0.8)';
     context.lineWidth = 2;
-    context.strokeRect(note.startTime, y - (NOTE_HEIGHT / 2), note.duration, NOTE_HEIGHT);
+    context.strokeRect(note.startTime, y, note.duration, NOTE_HEIGHT);
     
     // Draw lyric
     context.fillStyle = '#ffffff';
     context.font = '12px monospace';
-    context.fillText(note.lyric, note.startTime + 5, y + 5);
+    context.fillText(note.lyric, note.startTime + 5, y + (NOTE_HEIGHT / 2) + 5);
   });
 };
 
 export const snapToGrid = (value: number): number => {
-  return Math.round(value / GRID_UNIT) * GRID_UNIT;
+  // Snap to the nearest sixteenth note
+  const snapUnit = GRID_UNIT / 4; // Sixteenth note division
+  return Math.round(value / snapUnit) * snapUnit;
 };
 
 export const getMinNoteWidth = (): number => {
-  return MIN_NOTE_WIDTH;
+  // Minimum note width is one sixteenth note
+  return GRID_UNIT / 4;
 };
