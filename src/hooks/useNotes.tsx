@@ -11,6 +11,9 @@ export const useNotes = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [draggedNote, setDraggedNote] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizingNote, setResizingNote] = useState<string | null>(null);
+  const [resizeStartX, setResizeStartX] = useState<number | null>(null);
 
   const addToHistory = (newNotes: Note[]) => {
     const newHistory = notesHistory.slice(0, historyIndex + 1);
@@ -61,6 +64,18 @@ export const useNotes = () => {
     setDraggedNote(null);
   };
 
+  const startResizing = (noteId: string, startX: number) => {
+    setIsResizing(true);
+    setResizingNote(noteId);
+    setResizeStartX(startX);
+  };
+
+  const stopResizing = () => {
+    setIsResizing(false);
+    setResizingNote(null);
+    setResizeStartX(null);
+  };
+
   return {
     notes,
     selectedNote,
@@ -69,6 +84,9 @@ export const useNotes = () => {
     isDragging,
     draggedNote,
     dragOffset,
+    isResizing,
+    resizingNote,
+    resizeStartX,
     historyIndex,
     setDrawStart,
     setIsDrawing,
@@ -78,6 +96,8 @@ export const useNotes = () => {
     selectNote,
     startDragging,
     stopDragging,
+    startResizing,
+    stopResizing,
     handleUndo
   };
 };

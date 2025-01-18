@@ -26,6 +26,9 @@ const PitchBend = () => {
     isDragging,
     draggedNote,
     dragOffset,
+    isResizing,
+    resizingNote,
+    resizeStartX,
     historyIndex: notesHistoryIndex,
     setDrawStart,
     setIsDrawing,
@@ -34,6 +37,8 @@ const PitchBend = () => {
     selectNote,
     startDragging,
     stopDragging,
+    startResizing,
+    stopResizing,
     handleUndo: handleNotesUndo
   } = useNotes();
 
@@ -47,6 +52,12 @@ const PitchBend = () => {
     addToHistory,
     canvasRef,
   });
+
+  const isNoteResizeHandle = (x: number, note: Note) => {
+    const handleWidth = 10;
+    return x >= (note.startTime + note.duration - handleWidth) && 
+           x <= (note.startTime + note.duration);
+  };
 
   const handleNoteMouseDown = (e: React.MouseEvent) => {
     if (!canvasRef.current) return;
@@ -68,9 +79,13 @@ const PitchBend = () => {
     });
 
     if (clickedNote) {
-      const offsetX = x - clickedNote.startTime;
-      const offsetY = y - (canvasRef.current.height - (clickedNote.pitch * 25));
-      startDragging(clickedNote.id, offsetX, offsetY);
+      if (isNoteResizeHandle(x, clickedNote)) {
+        startResizing(clickedNote.id, x);
+      } else {
+        const offsetX = x - clickedNote.startTime;
+        const offsetY = y - (canvasRef.current.height - (clickedNote.pitch * 25));
+        startDragging(clickedNote.id, offsetX, offsetY);
+      }
       selectNote(clickedNote.id);
     } else {
       setDrawStart({ x, y });
@@ -85,14 +100,20 @@ const PitchBend = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (isDragging && draggedNote) {
+    if (isResizing && resizingNote && resizeStartX !== null) {
+      const note = notes.find(n => n.id === resizingNote);
+      if (note) {
+        const newDuration = Math.max(50, x - note.startTime); // Minimum width of 50px
+        updateNote(resizingNote, { duration: newDuration });
+      }
+    } else if (isDragging && draggedNote) {
       const noteHeight = 25;
       const newX = x - dragOffset.x;
       const newPitch = Math.floor((canvasRef.current.height - (y - dragOffset.y)) / noteHeight);
       
       updateNote(draggedNote, {
         startTime: newX,
-        pitch: Math.max(0, Math.min(43, newPitch)) // Clamp pitch between 0 and 43
+        pitch: Math.max(0, Math.min(43, newPitch))
       });
     } else if (isDrawing && drawStart) {
       const currentX = x;
@@ -104,27 +125,48 @@ const PitchBend = () => {
       
       // Draw preview rectangle
       const width = currentX - drawStart.x;
-      const height = 25; // One note height
+      const height = 25;
       
       context.fillStyle = 'rgba(0, 255, 136, 0.5)';
       context.fillRect(drawStart.x, drawStart.y - (height / 2), width, height);
     }
+
+    // Update cursor based on hover state
+    const hoveredNote = notes.find(note => {
+      const noteHeight = 25;
+      const noteY = canvasRef.current!.height - (note.pitch * noteHeight);
+      return (
+        x >= note.startTime &&
+        x <= note.startTime + note.duration &&
+        y >= noteY - (noteHeight / 2) &&
+        y <= noteY + (noteHeight / 2)
+      );
+    });
+
+    if (hoveredNote && isNoteResizeHandle(x, hoveredNote)) {
+      canvasRef.current.style.cursor = 'ew-resize';
+    } else if (hoveredNote) {
+      canvasRef.current.style.cursor = 'move';
+    } else {
+      canvasRef.current.style.cursor = 'default';
+    }
   };
 
   const handleNoteMouseUp = (e: React.MouseEvent) => {
-    if (isDragging) {
+    if (isResizing) {
+      stopResizing();
+    } else if (isDragging) {
       stopDragging();
     } else if (isDrawing && drawStart && canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
       const endX = e.clientX - rect.left;
       
-      // Calculate note properties
       const noteHeight = 25;
       const snapY = Math.round(drawStart.y / noteHeight) * noteHeight;
       const pitch = Math.floor((canvasRef.current.height - snapY) / noteHeight);
       
-      // Set a larger default note duration (200 pixels instead of endX - drawStart.x)
-      const defaultDuration = 200;
+      // Set a smaller default note duration (100 pixels)
+      const defaultDuration = 100;
       const duration = Math.max(defaultDuration, endX - drawStart.x);
 
       const newNote: Note = {
