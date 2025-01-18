@@ -139,7 +139,8 @@ export const drawNotes = (
 ) => {
   notes.forEach(note => {
     const noteHeight = 25;
-    const y = context.canvas.height - (note.pitch * noteHeight);
+    // Ensure y position aligns with grid
+    const y = Math.round((context.canvas.height - (note.pitch * noteHeight)) / GRID_UNIT) * GRID_UNIT;
     
     // Draw note rectangle
     context.fillStyle = 'rgba(0, 255, 136, 0.5)';
@@ -158,6 +159,7 @@ export const drawNotes = (
 };
 
 export const snapToGrid = (value: number): number => {
+  // Ensure value snaps exactly to grid unit
   return Math.round(value / GRID_UNIT) * GRID_UNIT;
 };
 
