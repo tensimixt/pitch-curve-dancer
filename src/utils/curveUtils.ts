@@ -2,12 +2,13 @@ import { Point, Note } from '@/types/canvas';
 
 const GRID_UNIT = 50; // Basic grid unit in pixels
 const MIN_NOTE_WIDTH = GRID_UNIT; // Minimum note width matches grid unit
+const NOTE_HEIGHT = 25; // Consistent note height matching piano keys
 
 const pixelsToCents = (pixelY: number, baseY: number): number => {
   // Calculate cents based on pixel distance from base note
   // 25 pixels = 100 cents (one semitone)
   const pixelDistance = baseY - pixelY;
-  return Math.round((pixelDistance / 25) * 100);
+  return Math.round((pixelDistance / NOTE_HEIGHT) * 100);
 };
 
 export const drawGrid = (
@@ -17,11 +18,9 @@ export const drawGrid = (
 ) => {
   // Clear canvas
   context.clearRect(0, 0, width, height);
-
-  const noteHeight = 25; // Height per note
   
   // Draw horizontal note lines
-  for (let y = 0; y <= height; y += noteHeight) {
+  for (let y = 0; y <= height; y += NOTE_HEIGHT) {
     // Draw main note line
     context.beginPath();
     context.strokeStyle = '#2a2a2a';
@@ -35,11 +34,11 @@ export const drawGrid = (
     context.strokeStyle = '#1a1a1a';
     context.setLineDash([2, 2]);
     // +50 cents line
-    context.moveTo(0, y - noteHeight/4);
-    context.lineTo(width, y - noteHeight/4);
+    context.moveTo(0, y - NOTE_HEIGHT/4);
+    context.lineTo(width, y - NOTE_HEIGHT/4);
     // -50 cents line
-    context.moveTo(0, y + noteHeight/4);
-    context.lineTo(width, y + noteHeight/4);
+    context.moveTo(0, y + NOTE_HEIGHT/4);
+    context.lineTo(width, y + NOTE_HEIGHT/4);
     context.stroke();
     context.setLineDash([]);
   }
@@ -111,9 +110,9 @@ export const drawCurve = (
     // Add relative cent values near control points
     points.forEach((point) => {
       // Find the closest note line
-      const noteIndex = Math.floor(point.y / 25);
-      const baseY = noteIndex * 25;
-      const cents = Math.round(pixelsToCents(point.y, baseY));
+      const noteIndex = Math.floor(point.y / NOTE_HEIGHT);
+      const baseY = noteIndex * NOTE_HEIGHT;
+      const cents = pixelsToCents(point.y, baseY);
       
       context.font = '10px monospace';
       context.fillStyle = '#00ff88';
@@ -138,17 +137,16 @@ export const drawNotes = (
   notes: Note[]
 ) => {
   notes.forEach(note => {
-    const noteHeight = 25;
-    const y = context.canvas.height - (note.pitch * noteHeight);
+    const y = context.canvas.height - (note.pitch * NOTE_HEIGHT);
     
-    // Draw note rectangle
+    // Draw note rectangle with exact height matching piano keys
     context.fillStyle = 'rgba(0, 255, 136, 0.5)';
-    context.fillRect(note.startTime, y - (noteHeight / 2), note.duration, noteHeight);
+    context.fillRect(note.startTime, y - (NOTE_HEIGHT / 2), note.duration, NOTE_HEIGHT);
     
     // Draw note border
     context.strokeStyle = 'rgba(0, 255, 136, 0.8)';
     context.lineWidth = 2;
-    context.strokeRect(note.startTime, y - (noteHeight / 2), note.duration, noteHeight);
+    context.strokeRect(note.startTime, y - (NOTE_HEIGHT / 2), note.duration, NOTE_HEIGHT);
     
     // Draw lyric
     context.fillStyle = '#ffffff';
