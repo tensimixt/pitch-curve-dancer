@@ -31,7 +31,6 @@ export const drawGrid = (
   
   // Draw horizontal note lines
   for (let y = 0; y <= height; y += NOTE_HEIGHT) {
-    // Draw main note line
     context.beginPath();
     context.strokeStyle = '#2a2a2a';
     context.lineWidth = 1;
@@ -40,13 +39,15 @@ export const drawGrid = (
     context.stroke();
   }
   
+  const sixteenthWidth = GRID_UNIT / 4; // Width of a sixteenth note
+  
   // Draw vertical beat lines and subdivisions
-  for (let x = 0; x <= width; x += GRID_UNIT) {
-    const isBeatLine = x % (GRID_UNIT * 4) === 0;
-    const isHalfBeatLine = x % (GRID_UNIT * 2) === 0;
+  for (let x = 0; x <= width; x += sixteenthWidth) {
+    const isBeatLine = x % GRID_UNIT === 0;
+    const isHalfBeatLine = x % (GRID_UNIT / 2) === 0;
     
     context.beginPath();
-    context.strokeStyle = isBeatLine ? '#3a3a3a' : '#2a2a2a';
+    context.strokeStyle = isBeatLine ? '#3a3a3a' : (isHalfBeatLine ? '#2d2d2d' : '#2a2a2a');
     context.lineWidth = isBeatLine ? 2 : (isHalfBeatLine ? 1.5 : 1);
     context.moveTo(x, 0);
     context.lineTo(x, height);
@@ -56,7 +57,7 @@ export const drawGrid = (
     if (isBeatLine) {
       context.font = '12px monospace';
       context.fillStyle = '#666666';
-      const beatNumber = (x / GRID_UNIT / 4) + 1;
+      const beatNumber = (x / GRID_UNIT) + 1;
       context.fillText(`${beatNumber}`, x + 5, 15);
     }
   }
@@ -143,17 +144,17 @@ export const drawNotes = (
     
     // Draw note rectangle with exact height matching piano keys
     context.fillStyle = 'rgba(0, 255, 136, 0.5)';
-    context.fillRect(note.startTime, y, note.duration, NOTE_HEIGHT);
+    context.fillRect(note.startTime, y - (NOTE_HEIGHT / 2), note.duration, NOTE_HEIGHT);
     
     // Draw note border
     context.strokeStyle = 'rgba(0, 255, 136, 0.8)';
     context.lineWidth = 2;
-    context.strokeRect(note.startTime, y, note.duration, NOTE_HEIGHT);
+    context.strokeRect(note.startTime, y - (NOTE_HEIGHT / 2), note.duration, NOTE_HEIGHT);
     
     // Draw lyric
     context.fillStyle = '#ffffff';
     context.font = '12px monospace';
-    context.fillText(note.lyric, note.startTime + 5, y + (NOTE_HEIGHT / 2) + 5);
+    context.fillText(note.lyric, note.startTime + 5, y + 5);
   });
 };
 
