@@ -1,21 +1,7 @@
 import { Point, Note } from '@/types/canvas';
 
-const NOTES = [
-  'C6', 'B5', 'A#5', 'A5', 'G#5', 'G5', 'F#5', 'F5', 'E5', 'D#5', 'D5', 'C#5', 'C5',
-  'B4', 'A#4', 'A4', 'G#4', 'G4', 'F#4', 'F4', 'E4', 'D#4', 'D4', 'C#4', 'C4',
-  'B3', 'A#3', 'A3', 'G#3', 'G3', 'F#3', 'F3', 'E3', 'D#3', 'D3', 'C#3', 'C3'
-];
-
-// Convert pixels to relative cents (-100 to +100 range per note)
-export const pixelsToCents = (pixels: number, baseY: number): number => {
-  const relativeDiff = baseY - pixels;
-  return (relativeDiff / 12.5) * 50; // 25 pixels per note, so 12.5 pixels = 50 cents
-};
-
-// Convert relative cents to pixels
-export const centsToPixels = (cents: number, baseY: number): number => {
-  return baseY - ((cents * 12.5) / 50);
-};
+const GRID_UNIT = 50; // Basic grid unit in pixels
+const MIN_NOTE_WIDTH = GRID_UNIT; // Minimum note width matches grid unit
 
 export const drawGrid = (
   context: CanvasRenderingContext2D,
@@ -27,10 +13,9 @@ export const drawGrid = (
 
   const noteHeight = 25; // Height per note
   
-  NOTES.forEach((note, index) => {
-    const y = index * noteHeight;
-    
-    // Draw main note line (0 cents)
+  // Draw horizontal note lines
+  for (let y = 0; y <= height; y += noteHeight) {
+    // Draw main note line
     context.beginPath();
     context.strokeStyle = '#2a2a2a';
     context.lineWidth = 1;
@@ -38,59 +23,35 @@ export const drawGrid = (
     context.lineTo(width, y);
     context.stroke();
     
-    // Draw +50 cents line
+    // Draw cents markers
     context.beginPath();
     context.strokeStyle = '#1a1a1a';
     context.setLineDash([2, 2]);
+    // +50 cents line
     context.moveTo(0, y - noteHeight/4);
     context.lineTo(width, y - noteHeight/4);
-    context.stroke();
-    
-    // Draw -50 cents line
+    // -50 cents line
     context.moveTo(0, y + noteHeight/4);
     context.lineTo(width, y + noteHeight/4);
     context.stroke();
     context.setLineDash([]);
-    
-    // Highlight C notes
-    if (note.startsWith('C')) {
-      context.beginPath();
-      context.strokeStyle = '#3a3a3a';
-      context.moveTo(0, y);
-      context.lineTo(width, y);
-      context.stroke();
-    }
-
-    // Add note name and cent markers
-    context.font = '10px monospace';
-    context.fillStyle = '#666666';
-    context.fillText(note, 5, y + 15);
-    context.fillText('+100¢', 45, y - noteHeight/2 + 4);
-    context.fillText('0¢', 45, y + 4);
-    context.fillText('-100¢', 45, y + noteHeight/2 + 4);
-  });
-  
-  // Draw vertical time markers
-  const timeMarkerWidth = 100;
-  const totalTimeMarkers = Math.ceil(width / timeMarkerWidth);
-  
-  context.beginPath();
-  context.strokeStyle = '#2a2a2a';
-  
-  for (let i = 0; i <= totalTimeMarkers; i++) {
-    const x = i * timeMarkerWidth;
-    context.moveTo(x, 0);
-    context.lineTo(x, height);
   }
   
-  context.stroke();
-  
-  // Add time marker labels
-  context.font = '12px monospace';
-  for (let i = 0; i <= totalTimeMarkers; i++) {
-    const x = i * timeMarkerWidth;
-    context.fillStyle = '#666666';
-    context.fillText(`${i}s`, x + 5, 15);
+  // Draw vertical grid lines
+  for (let x = 0; x <= width; x += GRID_UNIT) {
+    context.beginPath();
+    context.strokeStyle = '#2a2a2a';
+    context.lineWidth = 1;
+    context.moveTo(x, 0);
+    context.lineTo(x, height);
+    context.stroke();
+    
+    // Add time markers
+    if (x % (GRID_UNIT * 4) === 0) {
+      context.font = '12px monospace';
+      context.fillStyle = '#666666';
+      context.fillText(`${x / GRID_UNIT / 4}s`, x + 5, 15);
+    }
   }
 };
 
@@ -187,4 +148,12 @@ export const drawNotes = (
     context.font = '12px monospace';
     context.fillText(note.lyric, note.startTime + 5, y + 5);
   });
+};
+
+export const snapToGrid = (value: number): number => {
+  return Math.round(value / GRID_UNIT) * GRID_UNIT;
+};
+
+export const getMinNoteWidth = (): number => {
+  return MIN_NOTE_WIDTH;
 };

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCanvas } from '@/hooks/useCanvas';
-import { drawCurve, drawGrid, drawNotes } from '@/utils/curveUtils';
+import { drawCurve, drawGrid, drawNotes, snapToGrid, getMinNoteWidth } from '@/utils/curveUtils';
 import UndoButton from './UndoButton';
 import { usePointsHistory } from '@/hooks/usePointsHistory';
 import { usePointInteractions } from '@/hooks/usePointInteractions';
@@ -165,14 +165,16 @@ const PitchBend = () => {
       const snapY = Math.round(drawStart.y / noteHeight) * noteHeight;
       const pitch = Math.floor((canvasRef.current.height - snapY) / noteHeight);
       
-      // Set a smaller default note duration (100 pixels)
-      const defaultDuration = 100;
-      const duration = Math.max(defaultDuration, endX - drawStart.x);
+      // Snap note width to grid and ensure minimum width
+      const width = Math.max(
+        getMinNoteWidth(),
+        snapToGrid(endX - drawStart.x)
+      );
 
       const newNote: Note = {
         id: Date.now().toString(),
-        startTime: drawStart.x,
-        duration,
+        startTime: snapToGrid(drawStart.x),
+        duration: width,
         pitch,
         lyric: 'a'
       };
