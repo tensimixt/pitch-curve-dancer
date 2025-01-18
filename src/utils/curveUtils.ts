@@ -7,8 +7,6 @@ const NOTES = [
   'B3', 'A#3', 'A3', 'G#3', 'G3', 'F#3', 'F3', 'E3', 'D#3', 'D3', 'C#3', 'C3'
 ];
 
-const isBlackKey = (note: string) => note.includes('#');
-
 export const drawGrid = (
   context: CanvasRenderingContext2D,
   width: number,
@@ -23,12 +21,7 @@ export const drawGrid = (
   NOTES.forEach((note, index) => {
     const y = index * noteHeight;
     
-    // Fill key background color for the entire row, skip first cell (index 0)
-    if (index > 0) {
-      context.fillStyle = isBlackKey(note) ? '#222222' : '#ffffff';
-      context.fillRect(0, y, 50, noteHeight);
-    }
-    
+    // Draw horizontal grid lines only
     context.beginPath();
     context.strokeStyle = '#2a2a2a';
     context.lineWidth = 1;
@@ -36,11 +29,6 @@ export const drawGrid = (
     context.lineTo(width, y);
     context.stroke();
     
-    // Draw note label with contrasting color
-    context.fillStyle = isBlackKey(note) ? '#ffffff' : '#666666';
-    context.font = '12px monospace';
-    context.fillText(note, 5, y + 15);
-
     // Highlight C notes with a slightly brighter line
     if (note.startsWith('C')) {
       context.beginPath();
