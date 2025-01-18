@@ -6,6 +6,16 @@ const NOTES = [
   'B3', 'A#3', 'A3', 'G#3', 'G3', 'F#3', 'F3', 'E3', 'D#3', 'D3', 'C#3', 'C3'
 ];
 
+// Convert pixels to cents (1 semitone = 100 cents = 25 pixels)
+export const pixelsToCents = (pixels: number): number => {
+  return (pixels / 25) * 100;
+};
+
+// Convert cents to pixels
+export const centsToPixels = (cents: number): number => {
+  return (cents * 25) / 100;
+};
+
 export const drawGrid = (
   context: CanvasRenderingContext2D,
   width: number,
@@ -14,18 +24,28 @@ export const drawGrid = (
   // Clear canvas
   context.clearRect(0, 0, width, height);
 
-  const noteHeight = 25; // Fixed height per note
+  const noteHeight = 25; // 100 cents
+  const centHeight = noteHeight / 100; // Height of 1 cent
   
   NOTES.forEach((note, index) => {
     const y = index * noteHeight;
     
-    // Draw horizontal grid lines only
+    // Draw main semitone lines (100 cents)
     context.beginPath();
     context.strokeStyle = '#2a2a2a';
     context.lineWidth = 1;
     context.moveTo(0, y);
     context.lineTo(width, y);
     context.stroke();
+    
+    // Draw 50-cent marker (middle of semitone)
+    context.beginPath();
+    context.strokeStyle = '#1a1a1a';
+    context.setLineDash([2, 2]);
+    context.moveTo(0, y + (noteHeight / 2));
+    context.lineTo(width, y + (noteHeight / 2));
+    context.stroke();
+    context.setLineDash([]);
     
     // Highlight C notes with a slightly brighter line
     if (note.startsWith('C')) {
@@ -35,10 +55,16 @@ export const drawGrid = (
       context.lineTo(width, y);
       context.stroke();
     }
+
+    // Add note and cent labels
+    context.font = '10px monospace';
+    context.fillStyle = '#666666';
+    context.fillText(note, 5, y + 15);
+    context.fillText(`${index * 100}¢`, 45, y + 15);
   });
   
   // Draw vertical time markers
-  const timeMarkerWidth = 100; // pixels per time unit
+  const timeMarkerWidth = 100;
   const totalTimeMarkers = Math.ceil(width / timeMarkerWidth);
   
   context.beginPath();
@@ -106,6 +132,14 @@ export const drawCurve = (
     context.strokeStyle = '#00ff88';
     context.lineWidth = 2;
     context.stroke();
+
+    // Add cent values near control points
+    points.forEach((point) => {
+      const cents = Math.round(pixelsToCents(canvasHeight - point.y));
+      context.font = '10px monospace';
+      context.fillStyle = '#00ff88';
+      context.fillText(`${cents}¢`, point.x + 10, point.y);
+    });
   }
 
   // Draw points
