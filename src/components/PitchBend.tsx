@@ -49,12 +49,33 @@ const PitchBend = () => {
     };
   }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
-  // Piano key data
-  const pianoKeys = Array.from({ length: 44 }).map((_, i) => {
-    const note = 43 - i;
-    const isBlackKey = [1, 3, 6, 8, 10].includes(note % 12);
-    return { note, isBlackKey };
-  });
+  // Generate piano keys with note names
+  const generateNoteNames = () => {
+    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const startOctave = 6;  // Starting from C6
+    const totalKeys = 44;
+    
+    let currentOctave = startOctave;
+    let noteIndex = 0;
+    const pianoKeys = [];
+    
+    for (let i = 0; i < totalKeys; i++) {
+      const noteName = notes[noteIndex];
+      const fullNoteName = `${noteName}${currentOctave}`;
+      const isBlackKey = noteName.includes('#');
+      
+      pianoKeys.push({ note: fullNoteName, isBlackKey });
+      
+      noteIndex = (noteIndex + 1) % 12;
+      if (noteIndex === 0) {
+        currentOctave--;
+      }
+    }
+    
+    return pianoKeys;
+  };
+
+  const pianoKeys = generateNoteNames();
 
   return (
     <div className="relative h-[550px] w-full rounded-md border">
