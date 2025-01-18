@@ -103,7 +103,7 @@ const PitchBend = () => {
     if (isResizing && resizingNote && resizeStartX !== null) {
       const note = notes.find(n => n.id === resizingNote);
       if (note) {
-        const newDuration = Math.max(50, x - note.startTime); // Minimum width of 50px
+        const newDuration = Math.max(30, x - note.startTime); // Changed from 50 to 30
         updateNote(resizingNote, { duration: newDuration });
       }
     } else if (isDragging && draggedNote) {
