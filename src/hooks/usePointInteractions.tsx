@@ -36,7 +36,7 @@ export const usePointInteractions = ({
     return null;
   };
 
-  const isPointNearCurve = (pos: Point): { isNear: boolean, insertIndex: number } => {
+  const isNearCurve = (pos: Point): { isNear: boolean, insertIndex: number } => {
     if (points.length < 2) return { isNear: false, insertIndex: points.length };
 
     for (let i = 0; i < points.length - 1; i++) {
@@ -78,7 +78,6 @@ export const usePointInteractions = ({
       if (distance2 < 15 && param >= 0 && param <= 1) {
         // Calculate the actual y position on the curve using linear interpolation
         const curveY = p1.y + param * (p2.y - p1.y);
-        pos.y = curveY; // Snap the new point's Y position to the curve
         return { isNear: true, insertIndex: i + 1 };
       }
     }
@@ -94,7 +93,7 @@ export const usePointInteractions = ({
       setIsDragging(true);
       setDragPointIndex(pointIndex);
     } else {
-      const { isNear, insertIndex } = isPointNearCurve(pos);
+      const { isNear, insertIndex } = isNearCurve(pos);
       if (isNear) {
         const newPoints = [...points];
         newPoints.splice(insertIndex, 0, pos);
@@ -104,8 +103,6 @@ export const usePointInteractions = ({
         // Start dragging the newly created point
         setIsDragging(true);
         setDragPointIndex(insertIndex);
-        
-        console.log('Added point on curve at:', pos);
       }
     }
   }, [points, setPoints, addToHistory]);
@@ -132,5 +129,6 @@ export const usePointInteractions = ({
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    isNearCurve
   };
 };
