@@ -137,7 +137,8 @@ export const drawNotes = (
   notes: Note[]
 ) => {
   notes.forEach(note => {
-    const y = context.canvas.height - (note.pitch * NOTE_HEIGHT);
+    // Calculate Y position to center the note within the grid rectangle
+    const y = context.canvas.height - ((note.pitch + 0.5) * NOTE_HEIGHT);
     
     // Draw note rectangle with exact height matching piano keys
     context.fillStyle = 'rgba(0, 255, 136, 0.5)';
