@@ -6,14 +6,15 @@ const NOTES = [
   'B3', 'A#3', 'A3', 'G#3', 'G3', 'F#3', 'F3', 'E3', 'D#3', 'D3', 'C#3', 'C3'
 ];
 
-// Convert pixels to cents (1 semitone = 100 cents = 25 pixels)
-export const pixelsToCents = (pixels: number): number => {
-  return (pixels / 25) * 100;
+// Convert pixels to relative cents (-100 to +100 range per note)
+export const pixelsToCents = (pixels: number, baseY: number): number => {
+  const relativeDiff = baseY - pixels;
+  return (relativeDiff / 12.5) * 50; // 25 pixels per note, so 12.5 pixels = 50 cents
 };
 
-// Convert cents to pixels
-export const centsToPixels = (cents: number): number => {
-  return (cents * 25) / 100;
+// Convert relative cents to pixels
+export const centsToPixels = (cents: number, baseY: number): number => {
+  return baseY - ((cents * 12.5) / 50);
 };
 
 export const drawGrid = (
@@ -24,13 +25,12 @@ export const drawGrid = (
   // Clear canvas
   context.clearRect(0, 0, width, height);
 
-  const noteHeight = 25; // 100 cents
-  const centHeight = noteHeight / 100; // Height of 1 cent
+  const noteHeight = 25; // Height per note
   
   NOTES.forEach((note, index) => {
     const y = index * noteHeight;
     
-    // Draw main semitone lines (100 cents)
+    // Draw main note line (0 cents)
     context.beginPath();
     context.strokeStyle = '#2a2a2a';
     context.lineWidth = 1;
@@ -38,16 +38,21 @@ export const drawGrid = (
     context.lineTo(width, y);
     context.stroke();
     
-    // Draw 50-cent marker (middle of semitone)
+    // Draw +50 cents line
     context.beginPath();
     context.strokeStyle = '#1a1a1a';
     context.setLineDash([2, 2]);
-    context.moveTo(0, y + (noteHeight / 2));
-    context.lineTo(width, y + (noteHeight / 2));
+    context.moveTo(0, y - noteHeight/4);
+    context.lineTo(width, y - noteHeight/4);
+    context.stroke();
+    
+    // Draw -50 cents line
+    context.moveTo(0, y + noteHeight/4);
+    context.lineTo(width, y + noteHeight/4);
     context.stroke();
     context.setLineDash([]);
     
-    // Highlight C notes with a slightly brighter line
+    // Highlight C notes
     if (note.startsWith('C')) {
       context.beginPath();
       context.strokeStyle = '#3a3a3a';
@@ -56,11 +61,13 @@ export const drawGrid = (
       context.stroke();
     }
 
-    // Add note and cent labels
+    // Add note name and cent markers
     context.font = '10px monospace';
     context.fillStyle = '#666666';
     context.fillText(note, 5, y + 15);
-    context.fillText(`${index * 100}¢`, 45, y + 15);
+    context.fillText('+100¢', 45, y - noteHeight/2 + 4);
+    context.fillText('0¢', 45, y + 4);
+    context.fillText('-100¢', 45, y + noteHeight/2 + 4);
   });
   
   // Draw vertical time markers
@@ -133,12 +140,16 @@ export const drawCurve = (
     context.lineWidth = 2;
     context.stroke();
 
-    // Add cent values near control points
+    // Add relative cent values near control points
     points.forEach((point) => {
-      const cents = Math.round(pixelsToCents(canvasHeight - point.y));
+      // Find the closest note line
+      const noteIndex = Math.floor(point.y / 25);
+      const baseY = noteIndex * 25;
+      const cents = Math.round(pixelsToCents(point.y, baseY));
+      
       context.font = '10px monospace';
       context.fillStyle = '#00ff88';
-      context.fillText(`${cents}¢`, point.x + 10, point.y);
+      context.fillText(`${cents > 0 ? '+' : ''}${cents}¢`, point.x + 10, point.y);
     });
   }
 
