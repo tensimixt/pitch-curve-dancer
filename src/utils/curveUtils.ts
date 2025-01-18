@@ -1,4 +1,4 @@
-import { Point, Note } from '@/types/canvas';
+import { Point, Note, ControlPoint } from '@/types/canvas';
 
 const GRID_UNIT = 50; // Basic grid unit in pixels
 const NOTE_HEIGHT = 25; // Consistent note height matching piano keys
@@ -19,6 +19,46 @@ const pixelsToCents = (pixelY: number, baseY: number): number => {
   // 25 pixels = 100 cents (one semitone)
   const pixelDistance = baseY - pixelY;
   return Math.round((pixelDistance / NOTE_HEIGHT) * 100);
+};
+
+export const generateControlPoints = (notes: Note[]): Point[] => {
+  const points: Point[] = [];
+  
+  // Sort notes by startTime to ensure proper connection order
+  const sortedNotes = [...notes].sort((a, b) => a.startTime - b.startTime);
+  
+  sortedNotes.forEach((note, index) => {
+    // Add start point for each note
+    const startPoint: Point = {
+      x: note.startTime,
+      y: note.pitch * NOTE_HEIGHT
+    };
+    points.push(startPoint);
+
+    // Add end point for each note
+    const endPoint: Point = {
+      x: note.startTime + note.duration,
+      y: note.pitch * NOTE_HEIGHT
+    };
+    points.push(endPoint);
+
+    // Connect to next note if it exists and is vertically aligned
+    if (index < sortedNotes.length - 1) {
+      const nextNote = sortedNotes[index + 1];
+      const isVerticallyAligned = Math.abs(note.startTime + note.duration - nextNote.startTime) < GRID_UNIT / 4;
+      
+      if (isVerticallyAligned) {
+        // Add control points for smooth transition
+        const midPoint: Point = {
+          x: (note.startTime + note.duration + nextNote.startTime) / 2,
+          y: (note.pitch * NOTE_HEIGHT + nextNote.pitch * NOTE_HEIGHT) / 2
+        };
+        points.push(midPoint);
+      }
+    }
+  });
+
+  return points;
 };
 
 export const drawGrid = (
@@ -68,70 +108,58 @@ export const drawGrid = (
 export const drawCurve = (
   context: CanvasRenderingContext2D,
   points: Point[],
-  canvasWidth: number,
-  canvasHeight: number
+  width: number,
+  height: number
 ) => {
+  if (points.length < 2) return;
+
   // Draw curve
-  if (points.length > 1) {
-    context.beginPath();
-    context.moveTo(points[0].x, points[0].y);
+  context.beginPath();
+  context.moveTo(points[0].x, points[0].y);
 
-    // Snap points to grid
-    const snappedPoints = points.map(point => ({
-      x: Math.round(point.x / (GRID_UNIT / 4)) * (GRID_UNIT / 4),
-      y: point.y
-    }));
+  // Snap points to grid
+  const snappedPoints = points.map(point => ({
+    x: Math.round(point.x / (GRID_UNIT / 4)) * (GRID_UNIT / 4),
+    y: point.y
+  }));
 
-    if (snappedPoints.length === 2) {
-      context.lineTo(snappedPoints[1].x, snappedPoints[1].y);
-    } else {
-      for (let i = 0; i < snappedPoints.length - 1; i++) {
-        const curr = snappedPoints[i];
-        const next = snappedPoints[i + 1];
+  if (snappedPoints.length === 2) {
+    context.lineTo(snappedPoints[1].x, snappedPoints[1].y);
+  } else {
+    for (let i = 0; i < snappedPoints.length - 1; i++) {
+      const curr = snappedPoints[i];
+      const next = snappedPoints[i + 1];
+      
+      if (i === 0) {
+        const afterNext = snappedPoints[i + 2];
+        const controlX = next.x - (afterNext.x - curr.x) * 0.2;
+        const controlY = next.y - (afterNext.y - curr.y) * 0.2;
+        context.quadraticCurveTo(controlX, controlY, next.x, next.y);
+      } else if (i === snappedPoints.length - 2) {
+        const prev = snappedPoints[i - 1];
+        const controlX = curr.x + (next.x - prev.x) * 0.2;
+        const controlY = curr.y + (next.y - prev.y) * 0.2;
+        context.quadraticCurveTo(controlX, controlY, next.x, next.y);
+      } else {
+        const prev = snappedPoints[i - 1];
+        const afterNext = snappedPoints[i + 2];
         
-        if (i === 0) {
-          const afterNext = snappedPoints[i + 2];
-          const controlX = next.x - (afterNext.x - curr.x) * 0.2;
-          const controlY = next.y - (afterNext.y - curr.y) * 0.2;
-          context.quadraticCurveTo(controlX, controlY, next.x, next.y);
-        } else if (i === snappedPoints.length - 2) {
-          const prev = snappedPoints[i - 1];
-          const controlX = curr.x + (next.x - prev.x) * 0.2;
-          const controlY = curr.y + (next.y - prev.y) * 0.2;
-          context.quadraticCurveTo(controlX, controlY, next.x, next.y);
-        } else {
-          const prev = snappedPoints[i - 1];
-          const afterNext = snappedPoints[i + 2];
-          
-          const controlX1 = curr.x + (next.x - prev.x) * 0.2;
-          const controlY1 = curr.y + (next.y - prev.y) * 0.2;
-          const controlX2 = next.x - (afterNext.x - curr.x) * 0.2;
-          const controlY2 = next.y - (afterNext.y - curr.y) * 0.2;
-          
-          context.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, next.x, next.y);
-        }
+        const controlX1 = curr.x + (next.x - prev.x) * 0.2;
+        const controlY1 = curr.y + (next.y - prev.y) * 0.2;
+        const controlX2 = next.x - (afterNext.x - curr.x) * 0.2;
+        const controlY2 = next.y - (afterNext.y - curr.y) * 0.2;
+        
+        context.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, next.x, next.y);
       }
     }
-
-    context.strokeStyle = '#00ff88';
-    context.lineWidth = 2;
-    context.stroke();
-
-    // Add relative cent values near control points
-    snappedPoints.forEach((point) => {
-      // Find the closest note line
-      const noteIndex = Math.floor(point.y / NOTE_HEIGHT);
-      const baseY = noteIndex * NOTE_HEIGHT;
-      const cents = pixelsToCents(point.y, baseY);
-      
-      context.font = '10px monospace';
-      context.fillStyle = '#00ff88';
-      context.fillText(`${cents > 0 ? '+' : ''}${cents}¢`, point.x + 10, point.y);
-    });
   }
 
-  // Draw points
-  points.forEach((point) => {
+  context.strokeStyle = '#00ff88';
+  context.lineWidth = 2;
+  context.stroke();
+
+  // Draw control points
+  snappedPoints.forEach((point) => {
     context.beginPath();
     context.arc(point.x, point.y, 5, 0, Math.PI * 2);
     context.fillStyle = '#00ff88';
@@ -139,6 +167,15 @@ export const drawCurve = (
     context.strokeStyle = '#003311';
     context.lineWidth = 2;
     context.stroke();
+
+    // Add relative cent values near control points
+    const noteIndex = Math.floor(point.y / NOTE_HEIGHT);
+    const baseY = noteIndex * NOTE_HEIGHT;
+    const cents = pixelsToCents(point.y, baseY);
+    
+    context.font = '10px monospace';
+    context.fillStyle = '#00ff88';
+    context.fillText(`${cents > 0 ? '+' : ''}${cents}¢`, point.x + 10, point.y);
   });
 };
 

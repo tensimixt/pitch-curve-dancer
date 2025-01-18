@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCanvas } from '@/hooks/useCanvas';
-import { drawCurve, drawGrid, drawNotes, snapToGrid, getMinNoteWidth } from '@/utils/curveUtils';
+import { drawCurve, drawGrid, drawNotes, snapToGrid, getMinNoteWidth, generateControlPoints } from '@/utils/curveUtils';
 import UndoButton from './UndoButton';
 import { usePointsHistory } from '@/hooks/usePointsHistory';
 import { usePointInteractions } from '@/hooks/usePointInteractions';
@@ -187,6 +187,10 @@ const PitchBend = () => {
 
   useEffect(() => {
     if (!context || !canvasRef.current) return;
+    
+    // Generate control points from notes
+    const generatedPoints = generateControlPoints(notes);
+    setPoints(generatedPoints);
     
     drawGrid(context, canvasRef.current.width, canvasRef.current.height);
     drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
