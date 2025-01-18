@@ -40,25 +40,27 @@ export const drawGrid = (
   }
   
   const sixteenthWidth = GRID_UNIT / 4; // Width of a sixteenth note
+  const measureWidth = GRID_UNIT * 4; // Width of a full measure (4 beats)
   
   // Draw vertical beat lines and subdivisions
   for (let x = 0; x <= width; x += sixteenthWidth) {
+    const isMeasureLine = x % measureWidth === 0;
     const isBeatLine = x % GRID_UNIT === 0;
     const isHalfBeatLine = x % (GRID_UNIT / 2) === 0;
     
     context.beginPath();
-    context.strokeStyle = isBeatLine ? '#3a3a3a' : (isHalfBeatLine ? '#2d2d2d' : '#2a2a2a');
-    context.lineWidth = isBeatLine ? 2 : (isHalfBeatLine ? 1.5 : 1);
+    context.strokeStyle = isMeasureLine ? '#4a4a4a' : (isBeatLine ? '#3a3a3a' : (isHalfBeatLine ? '#2d2d2d' : '#2a2a2a'));
+    context.lineWidth = isMeasureLine ? 2.5 : (isBeatLine ? 2 : (isHalfBeatLine ? 1.5 : 1));
     context.moveTo(x, 0);
     context.lineTo(x, height);
     context.stroke();
     
-    // Add beat numbers
-    if (isBeatLine) {
+    // Add measure numbers (1,2,3,4,...)
+    if (isMeasureLine) {
       context.font = '12px monospace';
       context.fillStyle = '#666666';
-      const beatNumber = (x / GRID_UNIT) + 1;
-      context.fillText(`${beatNumber}`, x + 5, 15);
+      const measureNumber = (x / measureWidth) + 1;
+      context.fillText(`${measureNumber}`, x + 5, 15);
     }
   }
 };
