@@ -22,9 +22,17 @@ export const generateControlPoints = (notes: Note[]): Point[] => {
   const points: Point[] = [];
   const sortedNotes = [...notes].sort((a, b) => a.startTime - b.startTime);
   
-  sortedNotes.forEach(note => {
+  sortedNotes.forEach((note, index) => {
     // Calculate base Y position for this note
     const noteY = note.pitch * NOTE_HEIGHT;
+    
+    // Ensure note has control points
+    if (!note.controlPoints || note.controlPoints.length === 0) {
+      note.controlPoints = [
+        { x: 0, y: 0, connected: false },  // Start point
+        { x: note.duration, y: 0, connected: false }  // End point
+      ];
+    }
     
     // Convert note's relative control points to absolute positions
     note.controlPoints.forEach(cp => {
@@ -33,6 +41,25 @@ export const generateControlPoints = (notes: Note[]): Point[] => {
         y: noteY + (cp.y * NOTE_HEIGHT / 100)  // Convert cents to pixels
       });
     });
+
+    // Check if this note connects to the next note
+    if (index < sortedNotes.length - 1) {
+      const nextNote = sortedNotes[index + 1];
+      const isAdjacent = Math.abs(note.startTime + note.duration - nextNote.startTime) < GRID_UNIT / 4;
+      
+      if (isAdjacent) {
+        // Mark end point of current note and start point of next note as connected
+        note.controlPoints[note.controlPoints.length - 1].connected = true;
+        if (!nextNote.controlPoints || nextNote.controlPoints.length === 0) {
+          nextNote.controlPoints = [
+            { x: 0, y: 0, connected: true },
+            { x: nextNote.duration, y: 0, connected: false }
+          ];
+        } else {
+          nextNote.controlPoints[0].connected = true;
+        }
+      }
+    }
   });
 
   return points;
@@ -46,39 +73,37 @@ export const drawCurve = (
 ) => {
   if (points.length < 2) return;
 
-  // Draw curves for each note
-  for (let i = 0; i < points.length - 1; i += 2) {
-    const startPoint = points[i];
-    const endPoint = points[i + 1];
-    
-    // Draw the curve segment
+  // Draw curves between connected points
+  context.beginPath();
+  context.moveTo(points[0].x, height - points[0].y);
+
+  for (let i = 1; i < points.length; i++) {
+    context.lineTo(points[i].x, height - points[i].y);
+  }
+
+  context.strokeStyle = '#00ff88';
+  context.lineWidth = 2;
+  context.stroke();
+
+  // Draw control points
+  points.forEach((point) => {
     context.beginPath();
-    context.moveTo(startPoint.x, height - startPoint.y);
-    context.lineTo(endPoint.x, height - endPoint.y);
-    context.strokeStyle = '#00ff88';
+    context.arc(point.x, height - point.y, 5, 0, Math.PI * 2);
+    context.fillStyle = '#ff0000';
+    context.fill();
+    context.strokeStyle = '#800000';
     context.lineWidth = 2;
     context.stroke();
 
-    // Draw control points
-    [startPoint, endPoint].forEach(point => {
-      context.beginPath();
-      context.arc(point.x, height - point.y, 5, 0, Math.PI * 2);
-      context.fillStyle = '#ff0000';
-      context.fill();
-      context.strokeStyle = '#800000';
-      context.lineWidth = 2;
-      context.stroke();
-
-      // Add relative cent values near control points
-      const noteIndex = Math.floor(point.y / NOTE_HEIGHT);
-      const baseY = noteIndex * NOTE_HEIGHT;
-      const cents = pixelsToCents(point.y, baseY);
-      
-      context.font = '10px monospace';
-      context.fillStyle = '#ff0000';
-      context.fillText(`${cents > 0 ? '+' : ''}${cents}¢`, point.x + 10, height - point.y);
-    });
-  }
+    // Add relative cent values near control points
+    const noteIndex = Math.floor(point.y / NOTE_HEIGHT);
+    const baseY = noteIndex * NOTE_HEIGHT;
+    const cents = pixelsToCents(point.y, baseY);
+    
+    context.font = '10px monospace';
+    context.fillStyle = '#ff0000';
+    context.fillText(`${cents > 0 ? '+' : ''}${cents}¢`, point.x + 10, height - point.y);
+  });
 };
 
 export const drawGrid = (
