@@ -1,11 +1,10 @@
 import { Point, Note, ControlPoint } from '@/types/canvas';
 
-const GRID_UNIT = 50; // Basic grid unit in pixels
-const NOTE_HEIGHT = 25; // Consistent note height matching piano keys
-const TICKS_PER_BEAT = 480; // Standard MIDI resolution
+const GRID_UNIT = 50;
+const NOTE_HEIGHT = 25;
+const TICKS_PER_BEAT = 480;
 const PIXELS_PER_TICK = GRID_UNIT / TICKS_PER_BEAT;
 
-// Common musical divisions (in ticks)
 const DIVISIONS = {
   WHOLE: TICKS_PER_BEAT * 4,    // Whole note
   HALF: TICKS_PER_BEAT * 2,     // Half note
@@ -28,17 +27,20 @@ export const generateControlPoints = (notes: Note[]): Point[] => {
   const sortedNotes = [...notes].sort((a, b) => a.startTime - b.startTime);
   
   sortedNotes.forEach((note, index) => {
-    // Add control point for each note
-    const controlPoint: Point = {
+    // Calculate the actual Y position based on the note's pitch
+    const noteY = note.pitch * NOTE_HEIGHT;
+    
+    // Add control point at the start of the note
+    const startPoint: Point = {
       x: note.startTime,
-      y: note.pitch * NOTE_HEIGHT
+      y: noteY
     };
-    points.push(controlPoint);
+    points.push(startPoint);
 
     // Add end point for each note
     const endPoint: Point = {
       x: note.startTime + note.duration,
-      y: note.pitch * NOTE_HEIGHT
+      y: noteY
     };
     points.push(endPoint);
 
@@ -48,10 +50,11 @@ export const generateControlPoints = (notes: Note[]): Point[] => {
       const isVerticallyAligned = Math.abs(note.startTime + note.duration - nextNote.startTime) < GRID_UNIT / 4;
       
       if (isVerticallyAligned) {
+        const nextNoteY = nextNote.pitch * NOTE_HEIGHT;
         // Add control points for smooth transition
         const midPoint: Point = {
           x: (note.startTime + note.duration + nextNote.startTime) / 2,
-          y: (note.pitch * NOTE_HEIGHT + nextNote.pitch * NOTE_HEIGHT) / 2
+          y: (noteY + nextNoteY) / 2
         };
         points.push(midPoint);
       }
@@ -115,7 +118,7 @@ export const drawCurve = (
 
   // Draw curve
   context.beginPath();
-  context.moveTo(points[0].x, points[0].y);
+  context.moveTo(points[0].x, height - points[0].y);
 
   // Snap points to grid
   const snappedPoints = points.map(point => ({
@@ -124,7 +127,7 @@ export const drawCurve = (
   }));
 
   if (snappedPoints.length === 2) {
-    context.lineTo(snappedPoints[1].x, snappedPoints[1].y);
+    context.lineTo(snappedPoints[1].x, height - snappedPoints[1].y);
   } else {
     for (let i = 0; i < snappedPoints.length - 1; i++) {
       const curr = snappedPoints[i];
@@ -133,23 +136,23 @@ export const drawCurve = (
       if (i === 0) {
         const afterNext = snappedPoints[i + 2];
         const controlX = next.x - (afterNext.x - curr.x) * 0.2;
-        const controlY = next.y - (afterNext.y - curr.y) * 0.2;
-        context.quadraticCurveTo(controlX, controlY, next.x, next.y);
+        const controlY = height - (next.y - (afterNext.y - curr.y) * 0.2);
+        context.quadraticCurveTo(controlX, controlY, next.x, height - next.y);
       } else if (i === snappedPoints.length - 2) {
         const prev = snappedPoints[i - 1];
         const controlX = curr.x + (next.x - prev.x) * 0.2;
-        const controlY = curr.y + (next.y - prev.y) * 0.2;
-        context.quadraticCurveTo(controlX, controlY, next.x, next.y);
+        const controlY = height - (curr.y + (next.y - prev.y) * 0.2);
+        context.quadraticCurveTo(controlX, controlY, next.x, height - next.y);
       } else {
         const prev = snappedPoints[i - 1];
         const afterNext = snappedPoints[i + 2];
         
         const controlX1 = curr.x + (next.x - prev.x) * 0.2;
-        const controlY1 = curr.y + (next.y - prev.y) * 0.2;
+        const controlY1 = height - (curr.y + (next.y - prev.y) * 0.2);
         const controlX2 = next.x - (afterNext.x - curr.x) * 0.2;
-        const controlY2 = next.y - (afterNext.y - curr.y) * 0.2;
+        const controlY2 = height - (next.y - (afterNext.y - curr.y) * 0.2);
         
-        context.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, next.x, next.y);
+        context.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, next.x, height - next.y);
       }
     }
   }
@@ -161,7 +164,7 @@ export const drawCurve = (
   // Draw control points
   snappedPoints.forEach((point) => {
     context.beginPath();
-    context.arc(point.x, point.y, 5, 0, Math.PI * 2);
+    context.arc(point.x, height - point.y, 5, 0, Math.PI * 2);
     context.fillStyle = '#ff0000'; // Red control points
     context.fill();
     context.strokeStyle = '#800000'; // Darker red border
@@ -175,7 +178,7 @@ export const drawCurve = (
     
     context.font = '10px monospace';
     context.fillStyle = '#ff0000';
-    context.fillText(`${cents > 0 ? '+' : ''}${cents}¢`, point.x + 10, point.y);
+    context.fillText(`${cents > 0 ? '+' : ''}${cents}¢`, point.x + 10, height - point.y);
   });
 };
 
