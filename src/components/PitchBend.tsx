@@ -209,9 +209,9 @@ const PitchBend = () => {
           <PianoKeys pianoKeys={pianoKeys} />
           <PitchCanvas
             canvasRef={canvasRef}
-            onMouseDown={handleNoteMouseDown}
-            onMouseMove={handleNoteMouseMove}
-            onMouseUp={handleNoteMouseUp}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
           />
         </div>
       </ScrollArea>

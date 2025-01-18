@@ -104,8 +104,6 @@ export const usePointInteractions = ({
         // Start dragging the newly created point
         setIsDragging(true);
         setDragPointIndex(insertIndex);
-        
-        console.log('Added point on curve at:', pos);
       }
     }
   }, [points, setPoints, addToHistory]);
