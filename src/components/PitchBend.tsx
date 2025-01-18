@@ -80,7 +80,7 @@ const PitchBend = () => {
   return (
     <div className="relative h-[550px] w-full rounded-md border">
       <ScrollArea className="h-full" orientation="horizontal">
-        <div className="flex h-[1100px] w-[10000px]">
+        <div className="flex h-[1100px] w-[10000px] relative">
           {/* Fixed piano keys column */}
           <div className="sticky left-0 w-16 flex-shrink-0 bg-gray-800 z-50">
             {pianoKeys.map(({ note, isBlackKey }, i) => (
