@@ -6,6 +6,9 @@ export const useNotes = () => {
   const [selectedNote, setSelectedNote] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedNote, setDraggedNote] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const addNote = (note: Note) => {
     setNotes(prev => [...prev, note]);
@@ -25,16 +28,32 @@ export const useNotes = () => {
     setSelectedNote(noteId);
   };
 
+  const startDragging = (noteId: string, offsetX: number, offsetY: number) => {
+    setIsDragging(true);
+    setDraggedNote(noteId);
+    setDragOffset({ x: offsetX, y: offsetY });
+  };
+
+  const stopDragging = () => {
+    setIsDragging(false);
+    setDraggedNote(null);
+  };
+
   return {
     notes,
     selectedNote,
     isDrawing,
     drawStart,
+    isDragging,
+    draggedNote,
+    dragOffset,
     setDrawStart,
     setIsDrawing,
     addNote,
     updateNote,
     deleteNote,
-    selectNote
+    selectNote,
+    startDragging,
+    stopDragging
   };
 };

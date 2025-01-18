@@ -23,10 +23,16 @@ const PitchBend = () => {
     selectedNote,
     isDrawing,
     drawStart,
+    isDragging,
+    draggedNote,
+    dragOffset,
     setDrawStart,
     setIsDrawing,
     addNote,
-    selectNote
+    updateNote,
+    selectNote,
+    startDragging,
+    stopDragging
   } = useNotes();
 
   const {
@@ -47,51 +53,86 @@ const PitchBend = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    setDrawStart({ x, y });
-    setIsDrawing(true);
+    // Check if clicking on an existing note
+    const clickedNote = notes.find(note => {
+      const noteHeight = 25;
+      const noteY = canvasRef.current!.height - (note.pitch * noteHeight);
+      return (
+        x >= note.startTime &&
+        x <= note.startTime + note.duration &&
+        y >= noteY - (noteHeight / 2) &&
+        y <= noteY + (noteHeight / 2)
+      );
+    });
+
+    if (clickedNote) {
+      const offsetX = x - clickedNote.startTime;
+      const offsetY = y - (canvasRef.current.height - (clickedNote.pitch * 25));
+      startDragging(clickedNote.id, offsetX, offsetY);
+      selectNote(clickedNote.id);
+    } else {
+      setDrawStart({ x, y });
+      setIsDrawing(true);
+    }
   };
 
   const handleNoteMouseMove = (e: React.MouseEvent) => {
-    if (!isDrawing || !drawStart || !canvasRef.current || !context) return;
+    if (!canvasRef.current || !context) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
-    const currentX = e.clientX - rect.left;
-    
-    // Clear and redraw
-    drawGrid(context, canvasRef.current.width, canvasRef.current.height);
-    drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
-    drawNotes(context, notes);
-    
-    // Draw preview rectangle
-    const width = currentX - drawStart.x;
-    const height = 25; // One note height
-    
-    context.fillStyle = 'rgba(0, 255, 136, 0.5)';
-    context.fillRect(drawStart.x, drawStart.y - (height / 2), width, height);
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (isDragging && draggedNote) {
+      const noteHeight = 25;
+      const newX = x - dragOffset.x;
+      const newPitch = Math.floor((canvasRef.current.height - (y - dragOffset.y)) / noteHeight);
+      
+      updateNote(draggedNote, {
+        startTime: newX,
+        pitch: Math.max(0, Math.min(43, newPitch)) // Clamp pitch between 0 and 43
+      });
+    } else if (isDrawing && drawStart) {
+      const currentX = x;
+      
+      // Clear and redraw
+      drawGrid(context, canvasRef.current.width, canvasRef.current.height);
+      drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
+      drawNotes(context, notes);
+      
+      // Draw preview rectangle
+      const width = currentX - drawStart.x;
+      const height = 25; // One note height
+      
+      context.fillStyle = 'rgba(0, 255, 136, 0.5)';
+      context.fillRect(drawStart.x, drawStart.y - (height / 2), width, height);
+    }
   };
 
   const handleNoteMouseUp = (e: React.MouseEvent) => {
-    if (!isDrawing || !drawStart || !canvasRef.current) return;
+    if (isDragging) {
+      stopDragging();
+    } else if (isDrawing && drawStart && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const endX = e.clientX - rect.left;
+      
+      // Calculate note properties
+      const noteHeight = 25;
+      const snapY = Math.round(drawStart.y / noteHeight) * noteHeight;
+      const pitch = Math.floor((canvasRef.current.height - snapY) / noteHeight);
+      
+      const newNote: Note = {
+        id: Date.now().toString(),
+        startTime: drawStart.x,
+        duration: endX - drawStart.x,
+        pitch,
+        lyric: 'a'
+      };
 
-    const rect = canvasRef.current.getBoundingClientRect();
-    const endX = e.clientX - rect.left;
-    
-    // Calculate note properties
-    const noteHeight = 25;
-    const snapY = Math.round(drawStart.y / noteHeight) * noteHeight;
-    const pitch = Math.floor((canvasRef.current.height - snapY) / noteHeight);
-    
-    const newNote: Note = {
-      id: Date.now().toString(),
-      startTime: drawStart.x,
-      duration: endX - drawStart.x,
-      pitch,
-      lyric: 'a'
-    };
-
-    addNote(newNote);
-    setIsDrawing(false);
-    setDrawStart(null);
+      addNote(newNote);
+      setIsDrawing(false);
+      setDrawStart(null);
+    }
   };
 
   useEffect(() => {
