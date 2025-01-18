@@ -49,10 +49,10 @@ const PitchBend = () => {
     };
   }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
-  // Piano key data
+  // Piano key data - Starting from MIDI note 84 (C6) down to MIDI note 41 (F2)
   const pianoKeys = Array.from({ length: 44 }).map((_, i) => {
-    const note = 43 - i;
-    const isBlackKey = [1, 3, 6, 8, 10].includes(note % 12);
+    const note = 84 - i; // Start from C6 (84) and go down
+    const isBlackKey = [1, 3, 6, 8, 10].includes((note - 41) % 12);
     return { note, isBlackKey };
   });
 

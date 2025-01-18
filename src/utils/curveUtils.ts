@@ -1,13 +1,13 @@
 import { Point } from '@/types/canvas';
 
-const NOTES = [
-  'C7', 'B6', 'A#6', 'A6', 'G#6', 'G6', 'F#6', 'F6', 'E6', 'D#6', 'D6', 'C#6', 'C6',
-  'B5', 'A#5', 'A5', 'G#5', 'G5', 'F#5', 'F5', 'E5', 'D#5', 'D5', 'C#5', 'C5',
-  'B4', 'A#4', 'A4', 'G#4', 'G4', 'F#4', 'F4', 'E4', 'D#4', 'D4', 'C#4', 'C4',
-  'B3', 'A#3', 'A3', 'G#3', 'G3', 'F#3', 'F3', 'E3', 'D#3', 'D3', 'C#3', 'C3'
-];
+const NOTES = Array.from({ length: 44 }).map((_, i) => {
+  const midiNote = 84 - i; // Start from C6 (84) and go down
+  return midiNote;
+});
 
-const isBlackKey = (note: string) => note.includes('#');
+const isBlackKey = (note: number) => {
+  return [1, 3, 6, 8, 10].includes((note - 41) % 12);
+};
 
 export const drawGrid = (
   context: CanvasRenderingContext2D,
@@ -23,12 +23,6 @@ export const drawGrid = (
   NOTES.forEach((note, index) => {
     const y = index * noteHeight;
     
-    // Fill key background color for the entire row, skip first cell (index 0)
-    if (index > 0) {
-      context.fillStyle = isBlackKey(note) ? '#222222' : '#ffffff';
-      context.fillRect(0, y, 50, noteHeight);
-    }
-    
     context.beginPath();
     context.strokeStyle = '#2a2a2a';
     context.lineWidth = 1;
@@ -36,13 +30,8 @@ export const drawGrid = (
     context.lineTo(width, y);
     context.stroke();
     
-    // Draw note label with contrasting color
-    context.fillStyle = isBlackKey(note) ? '#ffffff' : '#666666';
-    context.font = '12px monospace';
-    context.fillText(note, 5, y + 15);
-
     // Highlight C notes with a slightly brighter line
-    if (note.startsWith('C')) {
+    if ((note - 41) % 12 === 0) {
       context.beginPath();
       context.strokeStyle = '#3a3a3a';
       context.moveTo(0, y);
