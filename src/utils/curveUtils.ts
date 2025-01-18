@@ -28,12 +28,12 @@ export const generateControlPoints = (notes: Note[]): Point[] => {
   const sortedNotes = [...notes].sort((a, b) => a.startTime - b.startTime);
   
   sortedNotes.forEach((note, index) => {
-    // Add start point for each note
-    const startPoint: Point = {
+    // Add control point for each note
+    const controlPoint: Point = {
       x: note.startTime,
       y: note.pitch * NOTE_HEIGHT
     };
-    points.push(startPoint);
+    points.push(controlPoint);
 
     // Add end point for each note
     const endPoint: Point = {
@@ -162,9 +162,9 @@ export const drawCurve = (
   snappedPoints.forEach((point) => {
     context.beginPath();
     context.arc(point.x, point.y, 5, 0, Math.PI * 2);
-    context.fillStyle = '#00ff88';
+    context.fillStyle = '#ff0000'; // Red control points
     context.fill();
-    context.strokeStyle = '#003311';
+    context.strokeStyle = '#800000'; // Darker red border
     context.lineWidth = 2;
     context.stroke();
 
@@ -174,7 +174,7 @@ export const drawCurve = (
     const cents = pixelsToCents(point.y, baseY);
     
     context.font = '10px monospace';
-    context.fillStyle = '#00ff88';
+    context.fillStyle = '#ff0000';
     context.fillText(`${cents > 0 ? '+' : ''}${cents}¢`, point.x + 10, point.y);
   });
 };
