@@ -43,9 +43,8 @@ export const usePointInteractions = ({
       const p1 = points[i];
       const p2 = points[i + 1];
 
-      // Check if points are connected (within a reasonable distance)
       const distance = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-      if (distance > 100) continue; // Skip if points are too far apart
+      if (distance > 100) continue;
 
       const A = pos.x - p1.x;
       const B = pos.y - p1.y;
@@ -76,7 +75,6 @@ export const usePointInteractions = ({
       const distance2 = Math.sqrt(dx * dx + dy * dy);
 
       if (distance2 < 15 && param >= 0 && param <= 1) {
-        // Calculate the actual y position on the curve using linear interpolation
         const curveY = p1.y + param * (p2.y - p1.y);
         return { isNear: true, insertIndex: i + 1 };
       }
@@ -100,7 +98,6 @@ export const usePointInteractions = ({
         setPoints(newPoints);
         addToHistory(newPoints);
         
-        // Start dragging the newly created point
         setIsDragging(true);
         setDragPointIndex(insertIndex);
       }

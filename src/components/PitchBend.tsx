@@ -149,9 +149,9 @@ const PitchBend = () => {
 
     // Update cursor based on hover state and shift key
     const pos = { x, y };
-    const { isNear } = isNearCurve(pos);
+    const { isNear: nearCurve } = isNearCurve(pos);
     
-    if (e.shiftKey && isNear) {
+    if (e.shiftKey && nearCurve) {
       canvasRef.current.style.cursor = 'pointer';
     } else {
       const hoveredNote = notes.find(note => {
