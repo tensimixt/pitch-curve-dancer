@@ -6,7 +6,7 @@ import UndoButton from './UndoButton';
 import { usePointsHistory } from '@/hooks/usePointsHistory';
 import { usePointInteractions } from '@/hooks/usePointInteractions';
 import { useNotes } from '@/hooks/useNotes';
-import { Note, Point } from '@/types/canvas';
+import { Note } from '@/types/canvas';
 
 const PitchBend = () => {
   const { canvasRef, context } = useCanvas();
@@ -43,10 +43,9 @@ const PitchBend = () => {
   } = useNotes();
 
   const {
-    handleMouseDown: handlePointMouseDown,
-    handleMouseMove: handlePointMouseMove,
-    handleMouseUp: handlePointMouseUp,
-    isNearCurve,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
   } = usePointInteractions({
     points,
     setPoints,
@@ -66,16 +65,6 @@ const PitchBend = () => {
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
-    // Check if shift key is pressed and we're near the curve
-    const pos = { x, y };
-    const { isNear } = isNearCurve(pos);
-    
-    if (e.shiftKey && isNear) {
-      // If shift is pressed and we're near the curve, handle it as a point interaction
-      handlePointMouseDown(e.nativeEvent);
-      return;
-    }
     
     // Check if clicking on an existing note
     const clickedNote = notes.find(note => {
@@ -111,15 +100,10 @@ const PitchBend = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Handle point dragging first if shift is pressed
-    if (e.shiftKey) {
-      handlePointMouseMove(e.nativeEvent);
-    }
-
     if (isResizing && resizingNote && resizeStartX !== null) {
       const note = notes.find(n => n.id === resizingNote);
       if (note) {
-        const newDuration = Math.max(30, x - note.startTime);
+        const newDuration = Math.max(30, x - note.startTime); // Changed from 50 to 30
         updateNote(resizingNote, { duration: newDuration });
       }
     } else if (isDragging && draggedNote) {
@@ -147,41 +131,28 @@ const PitchBend = () => {
       context.fillRect(drawStart.x, drawStart.y - (height / 2), width, height);
     }
 
-    // Update cursor based on hover state and shift key
-    const pos = { x, y };
-    const { isNear: nearCurve } = isNearCurve(pos);
-    
-    if (e.shiftKey && nearCurve) {
-      canvasRef.current.style.cursor = 'pointer';
-    } else {
-      const hoveredNote = notes.find(note => {
-        const noteHeight = 25;
-        const noteY = canvasRef.current!.height - (note.pitch * noteHeight);
-        return (
-          x >= note.startTime &&
-          x <= note.startTime + note.duration &&
-          y >= noteY - (noteHeight / 2) &&
-          y <= noteY + (noteHeight / 2)
-        );
-      });
+    // Update cursor based on hover state
+    const hoveredNote = notes.find(note => {
+      const noteHeight = 25;
+      const noteY = canvasRef.current!.height - (note.pitch * noteHeight);
+      return (
+        x >= note.startTime &&
+        x <= note.startTime + note.duration &&
+        y >= noteY - (noteHeight / 2) &&
+        y <= noteY + (noteHeight / 2)
+      );
+    });
 
-      if (hoveredNote && isNoteResizeHandle(x, hoveredNote)) {
-        canvasRef.current.style.cursor = 'ew-resize';
-      } else if (hoveredNote) {
-        canvasRef.current.style.cursor = 'move';
-      } else {
-        canvasRef.current.style.cursor = 'default';
-      }
+    if (hoveredNote && isNoteResizeHandle(x, hoveredNote)) {
+      canvasRef.current.style.cursor = 'ew-resize';
+    } else if (hoveredNote) {
+      canvasRef.current.style.cursor = 'move';
+    } else {
+      canvasRef.current.style.cursor = 'default';
     }
   };
 
   const handleNoteMouseUp = (e: React.MouseEvent) => {
-    // Handle point interaction first if shift is pressed
-    if (e.shiftKey) {
-      handlePointMouseUp(e.nativeEvent);
-      return;
-    }
-    
     if (isResizing) {
       stopResizing();
     } else if (isDragging) {
@@ -207,8 +178,8 @@ const PitchBend = () => {
         pitch,
         lyric: 'a',
         controlPoints: [
-          { x: 0, y: 0, connected: false },
-          { x: width, y: 0, connected: false }
+          { x: 0, y: 0, connected: false },  // Start point
+          { x: width, y: 0, connected: false }  // End point
         ]
       };
 

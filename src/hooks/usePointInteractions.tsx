@@ -36,15 +36,16 @@ export const usePointInteractions = ({
     return null;
   };
 
-  const isNearCurve = (pos: Point): { isNear: boolean, insertIndex: number } => {
+  const isPointNearCurve = (pos: Point): { isNear: boolean, insertIndex: number } => {
     if (points.length < 2) return { isNear: false, insertIndex: points.length };
 
     for (let i = 0; i < points.length - 1; i++) {
       const p1 = points[i];
       const p2 = points[i + 1];
 
+      // Check if points are connected (within a reasonable distance)
       const distance = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-      if (distance > 100) continue;
+      if (distance > 100) continue; // Skip if points are too far apart
 
       const A = pos.x - p1.x;
       const B = pos.y - p1.y;
@@ -75,7 +76,9 @@ export const usePointInteractions = ({
       const distance2 = Math.sqrt(dx * dx + dy * dy);
 
       if (distance2 < 15 && param >= 0 && param <= 1) {
+        // Calculate the actual y position on the curve using linear interpolation
         const curveY = p1.y + param * (p2.y - p1.y);
+        pos.y = curveY; // Snap the new point's Y position to the curve
         return { isNear: true, insertIndex: i + 1 };
       }
     }
@@ -91,15 +94,18 @@ export const usePointInteractions = ({
       setIsDragging(true);
       setDragPointIndex(pointIndex);
     } else {
-      const { isNear, insertIndex } = isNearCurve(pos);
+      const { isNear, insertIndex } = isPointNearCurve(pos);
       if (isNear) {
         const newPoints = [...points];
         newPoints.splice(insertIndex, 0, pos);
         setPoints(newPoints);
         addToHistory(newPoints);
         
+        // Start dragging the newly created point
         setIsDragging(true);
         setDragPointIndex(insertIndex);
+        
+        console.log('Added point on curve at:', pos);
       }
     }
   }, [points, setPoints, addToHistory]);
@@ -126,6 +132,5 @@ export const usePointInteractions = ({
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
-    isNearCurve
   };
 };
