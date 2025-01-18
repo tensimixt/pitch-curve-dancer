@@ -14,6 +14,13 @@ const DIVISIONS = {
   SIXTEENTH: TICKS_PER_BEAT / 4 // Sixteenth note
 };
 
+const pixelsToCents = (pixelY: number, baseY: number): number => {
+  // Calculate cents based on pixel distance from base note
+  // 25 pixels = 100 cents (one semitone)
+  const pixelDistance = baseY - pixelY;
+  return Math.round((pixelDistance / NOTE_HEIGHT) * 100);
+};
+
 export const drawGrid = (
   context: CanvasRenderingContext2D,
   width: number,
