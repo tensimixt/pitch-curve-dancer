@@ -34,14 +34,6 @@ export const generateControlPoints = (notes: Note[]): Point[] => {
       ];
     }
     
-    // Convert note's relative control points to absolute positions
-    note.controlPoints.forEach(cp => {
-      points.push({
-        x: note.startTime + cp.x,
-        y: noteY + (cp.y * NOTE_HEIGHT / 100)  // Convert cents to pixels
-      });
-    });
-
     // Check if this note connects to the next note
     if (index < sortedNotes.length - 1) {
       const nextNote = sortedNotes[index + 1];
@@ -60,6 +52,19 @@ export const generateControlPoints = (notes: Note[]): Point[] => {
         }
       }
     }
+    
+    // Only add points if they're connected to another note or if they're the first/last points of a note
+    note.controlPoints.forEach((cp, cpIndex) => {
+      const isFirstPoint = cpIndex === 0;
+      const isLastPoint = cpIndex === note.controlPoints.length - 1;
+      
+      if (isFirstPoint || isLastPoint || cp.connected) {
+        points.push({
+          x: note.startTime + cp.x,
+          y: noteY + (cp.y * NOTE_HEIGHT / 100)  // Convert cents to pixels
+        });
+      }
+    });
   });
 
   return points;
@@ -73,17 +78,40 @@ export const drawCurve = (
 ) => {
   if (points.length < 2) return;
 
-  // Draw curves between connected points
-  context.beginPath();
-  context.moveTo(points[0].x, height - points[0].y);
-
-  for (let i = 1; i < points.length; i++) {
-    context.lineTo(points[i].x, height - points[i].y);
+  // Draw curves between points
+  let currentPath: Point[] = [];
+  
+  points.forEach((point, index) => {
+    if (index === 0 || Math.abs(point.x - points[index - 1].x) > GRID_UNIT / 2) {
+      // Start a new path if this is the first point or if there's a gap
+      if (currentPath.length > 1) {
+        // Draw the previous path
+        context.beginPath();
+        context.moveTo(currentPath[0].x, height - currentPath[0].y);
+        currentPath.forEach((p, i) => {
+          if (i > 0) context.lineTo(p.x, height - p.y);
+        });
+        context.strokeStyle = '#00ff88';
+        context.lineWidth = 2;
+        context.stroke();
+      }
+      currentPath = [point];
+    } else {
+      currentPath.push(point);
+    }
+  });
+  
+  // Draw the last path if it exists
+  if (currentPath.length > 1) {
+    context.beginPath();
+    context.moveTo(currentPath[0].x, height - currentPath[0].y);
+    currentPath.forEach((p, i) => {
+      if (i > 0) context.lineTo(p.x, height - p.y);
+    });
+    context.strokeStyle = '#00ff88';
+    context.lineWidth = 2;
+    context.stroke();
   }
-
-  context.strokeStyle = '#00ff88';
-  context.lineWidth = 2;
-  context.stroke();
 
   // Draw control points
   points.forEach((point) => {
