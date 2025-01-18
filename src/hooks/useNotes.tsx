@@ -58,7 +58,10 @@ export const useNotes = () => {
       note.id === noteId ? { ...note, ...updates } : note
     );
     setNotes(newNotes);
-    addToHistory(newNotes);
+    // Only add to history when the drag or resize operation is complete
+    if (!isDragging && !isResizing) {
+      addToHistory(newNotes);
+    }
   };
 
   const deleteNote = (noteId: string) => {
@@ -78,6 +81,10 @@ export const useNotes = () => {
   };
 
   const stopDragging = () => {
+    if (isDragging && notes.length > 0) {
+      // Add the final position to history when drag ends
+      addToHistory([...notes]);
+    }
     setIsDragging(false);
     setDraggedNote(null);
   };
@@ -89,6 +96,10 @@ export const useNotes = () => {
   };
 
   const stopResizing = () => {
+    if (isResizing && notes.length > 0) {
+      // Add the final size to history when resize ends
+      addToHistory([...notes]);
+    }
     setIsResizing(false);
     setResizingNote(null);
     setResizeStartX(null);
