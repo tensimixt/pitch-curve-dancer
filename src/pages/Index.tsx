@@ -1,6 +1,7 @@
+import React from 'react';
 import PitchBend from "@/components/PitchBend";
 
-const Index = () => {
+function Index() {
   return (
     <div className="min-h-screen bg-gray-900 p-8">
       <div className="max-w-4xl mx-auto">
@@ -15,6 +16,6 @@ const Index = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Index;
