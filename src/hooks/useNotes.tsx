@@ -16,25 +16,34 @@ export const useNotes = () => {
   const [resizeStartX, setResizeStartX] = useState<number | null>(null);
 
   const addToHistory = (newNotes: Note[]) => {
+    // Remove any future history if we're not at the latest state
     const newHistory = notesHistory.slice(0, historyIndex + 1);
+    // Add the new state
     newHistory.push([...newNotes]);
     setNotesHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
+    console.log('Added to history:', newHistory);
   };
 
   const handleUndo = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      // Set notes to the previous state from history
-      setNotes([...notesHistory[newIndex]]);
-      // Clear any active note interactions
+      console.log('Undoing to history index:', newIndex);
+      console.log('History state at index:', notesHistory[newIndex]);
+      
+      // Clear any active interactions first
       setSelectedNote(null);
       setIsDragging(false);
       setDraggedNote(null);
       setIsResizing(false);
       setResizingNote(null);
       setResizeStartX(null);
+      setIsDrawing(false);
+      setDrawStart(null);
+      
+      // Update the history index and notes
+      setHistoryIndex(newIndex);
+      setNotes([...notesHistory[newIndex]]);
     }
   };
 
