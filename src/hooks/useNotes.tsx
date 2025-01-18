@@ -3,6 +3,8 @@ import { Note } from '@/types/canvas';
 
 export const useNotes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [notesHistory, setNotesHistory] = useState<Note[][]>([[]]);
+  const [historyIndex, setHistoryIndex] = useState(0);
   const [selectedNote, setSelectedNote] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
@@ -10,18 +12,38 @@ export const useNotes = () => {
   const [draggedNote, setDraggedNote] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  const addToHistory = (newNotes: Note[]) => {
+    const newHistory = notesHistory.slice(0, historyIndex + 1);
+    newHistory.push([...newNotes]);
+    setNotesHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(historyIndex - 1);
+      setNotes([...notesHistory[historyIndex - 1]]);
+    }
+  };
+
   const addNote = (note: Note) => {
-    setNotes(prev => [...prev, note]);
+    const newNotes = [...notes, note];
+    setNotes(newNotes);
+    addToHistory(newNotes);
   };
 
   const updateNote = (noteId: string, updates: Partial<Note>) => {
-    setNotes(prev => prev.map(note => 
+    const newNotes = notes.map(note => 
       note.id === noteId ? { ...note, ...updates } : note
-    ));
+    );
+    setNotes(newNotes);
+    addToHistory(newNotes);
   };
 
   const deleteNote = (noteId: string) => {
-    setNotes(prev => prev.filter(note => note.id !== noteId));
+    const newNotes = notes.filter(note => note.id !== noteId);
+    setNotes(newNotes);
+    addToHistory(newNotes);
   };
 
   const selectNote = (noteId: string | null) => {
@@ -47,6 +69,7 @@ export const useNotes = () => {
     isDragging,
     draggedNote,
     dragOffset,
+    historyIndex,
     setDrawStart,
     setIsDrawing,
     addNote,
@@ -54,6 +77,7 @@ export const useNotes = () => {
     deleteNote,
     selectNote,
     startDragging,
-    stopDragging
+    stopDragging,
+    handleUndo
   };
 };

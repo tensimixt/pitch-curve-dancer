@@ -13,8 +13,8 @@ const PitchBend = () => {
   const {
     points,
     setPoints,
-    historyIndex,
-    handleUndo,
+    historyIndex: pointsHistoryIndex,
+    handleUndo: handlePointsUndo,
     addToHistory,
   } = usePointsHistory();
 
@@ -26,13 +26,15 @@ const PitchBend = () => {
     isDragging,
     draggedNote,
     dragOffset,
+    historyIndex: notesHistoryIndex,
     setDrawStart,
     setIsDrawing,
     addNote,
     updateNote,
     selectNote,
     startDragging,
-    stopDragging
+    stopDragging,
+    handleUndo: handleNotesUndo
   } = useNotes();
 
   const {
@@ -121,10 +123,14 @@ const PitchBend = () => {
       const snapY = Math.round(drawStart.y / noteHeight) * noteHeight;
       const pitch = Math.floor((canvasRef.current.height - snapY) / noteHeight);
       
+      // Set a larger default note duration (200 pixels instead of endX - drawStart.x)
+      const defaultDuration = 200;
+      const duration = Math.max(defaultDuration, endX - drawStart.x);
+
       const newNote: Note = {
         id: Date.now().toString(),
         startTime: drawStart.x,
-        duration: endX - drawStart.x,
+        duration,
         pitch,
         lyric: 'a'
       };
@@ -142,6 +148,14 @@ const PitchBend = () => {
     drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
     drawNotes(context, notes);
   }, [points, notes, context]);
+
+  const handleUndoClick = () => {
+    if (notesHistoryIndex > 0) {
+      handleNotesUndo();
+    } else {
+      handlePointsUndo();
+    }
+  };
 
   // Generate piano keys with note names
   const generateNoteNames = () => {
@@ -210,8 +224,8 @@ const PitchBend = () => {
         </div>
       </ScrollArea>
       <UndoButton 
-        onUndo={handleUndo} 
-        disabled={historyIndex === 0} 
+        onUndo={handleUndoClick} 
+        disabled={pointsHistoryIndex === 0 && notesHistoryIndex === 0} 
       />
     </div>
   );
