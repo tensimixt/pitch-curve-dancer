@@ -24,8 +24,17 @@ export const useNotes = () => {
 
   const handleUndo = () => {
     if (historyIndex > 0) {
-      setHistoryIndex(historyIndex - 1);
-      setNotes([...notesHistory[historyIndex - 1]]);
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      // Set notes to the previous state from history
+      setNotes([...notesHistory[newIndex]]);
+      // Clear any active note interactions
+      setSelectedNote(null);
+      setIsDragging(false);
+      setDraggedNote(null);
+      setIsResizing(false);
+      setResizingNote(null);
+      setResizeStartX(null);
     }
   };
 
