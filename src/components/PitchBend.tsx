@@ -6,7 +6,7 @@ import UndoButton from './UndoButton';
 import { usePointsHistory } from '@/hooks/usePointsHistory';
 import { usePointInteractions } from '@/hooks/usePointInteractions';
 import { useNotes } from '@/hooks/useNotes';
-import { Note } from '@/types/canvas';
+import { Note, Point } from '@/types/canvas';
 
 const PitchBend = () => {
   const { canvasRef, context } = useCanvas();
@@ -69,7 +69,7 @@ const PitchBend = () => {
     
     // Check if shift key is pressed and we're near the curve
     const pos = { x, y };
-    const { isNear } = isNearCurve(pos);
+    const { isNear } = isNearCurve();
     
     if (e.shiftKey && isNear) {
       // If shift is pressed and we're near the curve, handle it as a point interaction
@@ -148,8 +148,7 @@ const PitchBend = () => {
     }
 
     // Update cursor based on hover state and shift key
-    const pos = { x, y };
-    const { isNear } = isNearCurve(pos);
+    const { isNear } = isNearCurve();
     
     if (e.shiftKey && isNear) {
       canvasRef.current.style.cursor = 'pointer';
