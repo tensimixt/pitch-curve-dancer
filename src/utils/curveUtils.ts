@@ -14,49 +14,50 @@ const DIVISIONS = {
 };
 
 const pixelsToCents = (pixelY: number, baseY: number): number => {
-  // Calculate cents based on pixel distance from base note
-  // 25 pixels = 100 cents (one semitone)
   const pixelDistance = baseY - pixelY;
   return Math.round((pixelDistance / NOTE_HEIGHT) * 100);
 };
 
 export const generateControlPoints = (notes: Note[]): Point[] => {
   const points: Point[] = [];
-  
-  // Sort notes by startTime to ensure proper connection order
   const sortedNotes = [...notes].sort((a, b) => a.startTime - b.startTime);
   
   sortedNotes.forEach((note, index) => {
-    // Calculate the actual Y position based on the note's pitch
+    // Calculate base Y position for this note
     const noteY = note.pitch * NOTE_HEIGHT;
     
-    // Add control point at the start of the note
-    const startPoint: Point = {
-      x: note.startTime,
-      y: noteY
-    };
-    points.push(startPoint);
+    // Add start control point
+    if (!note.controlPoints || note.controlPoints.length === 0) {
+      note.controlPoints = [
+        { x: 0, y: 0, connected: false },  // Start point
+        { x: note.duration, y: 0, connected: false }  // End point
+      ];
+    }
+    
+    // Convert note's relative control points to absolute positions
+    note.controlPoints.forEach(cp => {
+      points.push({
+        x: note.startTime + cp.x,
+        y: noteY + (cp.y * NOTE_HEIGHT / 100)  // Convert cents to pixels
+      });
+    });
 
-    // Add end point for each note
-    const endPoint: Point = {
-      x: note.startTime + note.duration,
-      y: noteY
-    };
-    points.push(endPoint);
-
-    // Connect to next note if it exists and is vertically aligned
+    // Check if this note connects to the next note
     if (index < sortedNotes.length - 1) {
       const nextNote = sortedNotes[index + 1];
       const isVerticallyAligned = Math.abs(note.startTime + note.duration - nextNote.startTime) < GRID_UNIT / 4;
       
       if (isVerticallyAligned) {
-        const nextNoteY = nextNote.pitch * NOTE_HEIGHT;
-        // Add control points for smooth transition
-        const midPoint: Point = {
-          x: (note.startTime + note.duration + nextNote.startTime) / 2,
-          y: (noteY + nextNoteY) / 2
-        };
-        points.push(midPoint);
+        // Mark end point of current note and start point of next note as connected
+        note.controlPoints[note.controlPoints.length - 1].connected = true;
+        if (!nextNote.controlPoints || nextNote.controlPoints.length === 0) {
+          nextNote.controlPoints = [
+            { x: 0, y: 0, connected: true },
+            { x: nextNote.duration, y: 0, connected: false }
+          ];
+        } else {
+          nextNote.controlPoints[0].connected = true;
+        }
       }
     }
   });
@@ -133,27 +134,7 @@ export const drawCurve = (
       const curr = snappedPoints[i];
       const next = snappedPoints[i + 1];
       
-      if (i === 0) {
-        const afterNext = snappedPoints[i + 2];
-        const controlX = next.x - (afterNext.x - curr.x) * 0.2;
-        const controlY = height - (next.y - (afterNext.y - curr.y) * 0.2);
-        context.quadraticCurveTo(controlX, controlY, next.x, height - next.y);
-      } else if (i === snappedPoints.length - 2) {
-        const prev = snappedPoints[i - 1];
-        const controlX = curr.x + (next.x - prev.x) * 0.2;
-        const controlY = height - (curr.y + (next.y - prev.y) * 0.2);
-        context.quadraticCurveTo(controlX, controlY, next.x, height - next.y);
-      } else {
-        const prev = snappedPoints[i - 1];
-        const afterNext = snappedPoints[i + 2];
-        
-        const controlX1 = curr.x + (next.x - prev.x) * 0.2;
-        const controlY1 = height - (curr.y + (next.y - prev.y) * 0.2);
-        const controlX2 = next.x - (afterNext.x - curr.x) * 0.2;
-        const controlY2 = height - (next.y - (afterNext.y - curr.y) * 0.2);
-        
-        context.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, next.x, height - next.y);
-      }
+      context.lineTo(next.x, height - next.y);
     }
   }
 
@@ -165,9 +146,9 @@ export const drawCurve = (
   snappedPoints.forEach((point) => {
     context.beginPath();
     context.arc(point.x, height - point.y, 5, 0, Math.PI * 2);
-    context.fillStyle = '#ff0000'; // Red control points
+    context.fillStyle = '#ff0000';
     context.fill();
-    context.strokeStyle = '#800000'; // Darker red border
+    context.strokeStyle = '#800000';
     context.lineWidth = 2;
     context.stroke();
 
