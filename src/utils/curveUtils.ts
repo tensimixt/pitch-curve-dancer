@@ -76,26 +76,32 @@ export const drawCurve = (
     context.beginPath();
     context.moveTo(points[0].x, points[0].y);
 
-    if (points.length === 2) {
-      context.lineTo(points[1].x, points[1].y);
+    // Snap points to grid
+    const snappedPoints = points.map(point => ({
+      x: Math.round(point.x / (GRID_UNIT / 4)) * (GRID_UNIT / 4),
+      y: point.y
+    }));
+
+    if (snappedPoints.length === 2) {
+      context.lineTo(snappedPoints[1].x, snappedPoints[1].y);
     } else {
-      for (let i = 0; i < points.length - 1; i++) {
-        const curr = points[i];
-        const next = points[i + 1];
+      for (let i = 0; i < snappedPoints.length - 1; i++) {
+        const curr = snappedPoints[i];
+        const next = snappedPoints[i + 1];
         
         if (i === 0) {
-          const afterNext = points[i + 2];
+          const afterNext = snappedPoints[i + 2];
           const controlX = next.x - (afterNext.x - curr.x) * 0.2;
           const controlY = next.y - (afterNext.y - curr.y) * 0.2;
           context.quadraticCurveTo(controlX, controlY, next.x, next.y);
-        } else if (i === points.length - 2) {
-          const prev = points[i - 1];
+        } else if (i === snappedPoints.length - 2) {
+          const prev = snappedPoints[i - 1];
           const controlX = curr.x + (next.x - prev.x) * 0.2;
           const controlY = curr.y + (next.y - prev.y) * 0.2;
           context.quadraticCurveTo(controlX, controlY, next.x, next.y);
         } else {
-          const prev = points[i - 1];
-          const afterNext = points[i + 2];
+          const prev = snappedPoints[i - 1];
+          const afterNext = snappedPoints[i + 2];
           
           const controlX1 = curr.x + (next.x - prev.x) * 0.2;
           const controlY1 = curr.y + (next.y - prev.y) * 0.2;
@@ -112,7 +118,7 @@ export const drawCurve = (
     context.stroke();
 
     // Add relative cent values near control points
-    points.forEach((point) => {
+    snappedPoints.forEach((point) => {
       // Find the closest note line
       const noteIndex = Math.floor(point.y / NOTE_HEIGHT);
       const baseY = noteIndex * NOTE_HEIGHT;
