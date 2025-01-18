@@ -67,12 +67,12 @@ const PitchBend = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // First check if we're clicking on the pitch curve
+    // Check if shift key is pressed and we're near the curve
     const pos = { x, y };
     const { isNear } = isNearCurve(pos);
     
-    if (isNear) {
-      // If we're near the curve, handle it as a point interaction
+    if (e.shiftKey && isNear) {
+      // If shift is pressed and we're near the curve, handle it as a point interaction
       handlePointMouseDown(e.nativeEvent);
       return;
     }
@@ -111,8 +111,10 @@ const PitchBend = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Handle point dragging first
-    handlePointMouseMove(e.nativeEvent);
+    // Handle point dragging first if shift is pressed
+    if (e.shiftKey) {
+      handlePointMouseMove(e.nativeEvent);
+    }
 
     if (isResizing && resizingNote && resizeStartX !== null) {
       const note = notes.find(n => n.id === resizingNote);
@@ -145,33 +147,40 @@ const PitchBend = () => {
       context.fillRect(drawStart.x, drawStart.y - (height / 2), width, height);
     }
 
-    // Update cursor based on hover state
-    const hoveredNote = notes.find(note => {
-      const noteHeight = 25;
-      const noteY = canvasRef.current!.height - (note.pitch * noteHeight);
-      return (
-        x >= note.startTime &&
-        x <= note.startTime + note.duration &&
-        y >= noteY - (noteHeight / 2) &&
-        y <= noteY + (noteHeight / 2)
-      );
-    });
-
-    if (hoveredNote && isNoteResizeHandle(x, hoveredNote)) {
-      canvasRef.current.style.cursor = 'ew-resize';
-    } else if (hoveredNote) {
-      canvasRef.current.style.cursor = 'move';
+    // Update cursor based on hover state and shift key
+    const pos = { x, y };
+    const { isNear } = isNearCurve(pos);
+    
+    if (e.shiftKey && isNear) {
+      canvasRef.current.style.cursor = 'pointer';
     } else {
-      // Check if we're hovering over the pitch curve
-      const pos = { x, y };
-      const { isNear } = isNearCurve(pos);
-      canvasRef.current.style.cursor = isNear ? 'pointer' : 'default';
+      const hoveredNote = notes.find(note => {
+        const noteHeight = 25;
+        const noteY = canvasRef.current!.height - (note.pitch * noteHeight);
+        return (
+          x >= note.startTime &&
+          x <= note.startTime + note.duration &&
+          y >= noteY - (noteHeight / 2) &&
+          y <= noteY + (noteHeight / 2)
+        );
+      });
+
+      if (hoveredNote && isNoteResizeHandle(x, hoveredNote)) {
+        canvasRef.current.style.cursor = 'ew-resize';
+      } else if (hoveredNote) {
+        canvasRef.current.style.cursor = 'move';
+      } else {
+        canvasRef.current.style.cursor = 'default';
+      }
     }
   };
 
   const handleNoteMouseUp = (e: React.MouseEvent) => {
-    // Handle point interaction first
-    handlePointMouseUp(e.nativeEvent);
+    // Handle point interaction first if shift is pressed
+    if (e.shiftKey) {
+      handlePointMouseUp(e.nativeEvent);
+      return;
+    }
     
     if (isResizing) {
       stopResizing();
