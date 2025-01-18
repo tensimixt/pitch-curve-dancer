@@ -3,6 +3,13 @@ import { Point, Note } from '@/types/canvas';
 const GRID_UNIT = 50; // Basic grid unit in pixels
 const MIN_NOTE_WIDTH = GRID_UNIT; // Minimum note width matches grid unit
 
+const pixelsToCents = (pixelY: number, baseY: number): number => {
+  // Calculate cents based on pixel distance from base note
+  // 25 pixels = 100 cents (one semitone)
+  const pixelDistance = baseY - pixelY;
+  return Math.round((pixelDistance / 25) * 100);
+};
+
 export const drawGrid = (
   context: CanvasRenderingContext2D,
   width: number,
