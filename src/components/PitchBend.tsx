@@ -176,7 +176,11 @@ const PitchBend = () => {
         startTime: snapToGrid(drawStart.x),
         duration: width,
         pitch,
-        lyric: 'a'
+        lyric: 'a',
+        controlPoints: [
+          { x: 0, y: 0, connected: false },  // Start point
+          { x: width, y: 0, connected: false }  // End point
+        ]
       };
 
       addNote(newNote);
