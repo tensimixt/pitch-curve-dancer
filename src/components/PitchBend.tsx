@@ -69,7 +69,7 @@ const PitchBend = () => {
     
     // Check if shift key is pressed and we're near the curve
     const pos = { x, y };
-    const { isNear } = isNearCurve();
+    const { isNear } = isNearCurve(pos);
     
     if (e.shiftKey && isNear) {
       // If shift is pressed and we're near the curve, handle it as a point interaction
@@ -148,7 +148,8 @@ const PitchBend = () => {
     }
 
     // Update cursor based on hover state and shift key
-    const { isNear } = isNearCurve();
+    const pos = { x, y };
+    const { isNear } = isNearCurve(pos);
     
     if (e.shiftKey && isNear) {
       canvasRef.current.style.cursor = 'pointer';
