@@ -3,9 +3,9 @@ import { Note } from '@/types/canvas';
 
 interface PitchCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
-  onMouseDown: (e: React.MouseEvent) => void;
-  onMouseMove: (e: React.MouseEvent) => void;
-  onMouseUp: (e: React.MouseEvent) => void;
+  onMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+  onMouseMove: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+  onMouseUp: (e: React.MouseEvent<HTMLCanvasElement>) => void;
 }
 
 const PitchCanvas: React.FC<PitchCanvasProps> = ({

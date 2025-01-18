@@ -17,7 +17,7 @@ export const usePointInteractions = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragPointIndex, setDragPointIndex] = useState<number | null>(null);
 
-  const getMousePos = (e: MouseEvent): Point => {
+  const getMousePos = (e: React.MouseEvent<HTMLCanvasElement>): Point => {
     const rect = canvasRef.current!.getBoundingClientRect();
     return {
       x: e.clientX - rect.left,
@@ -86,7 +86,7 @@ export const usePointInteractions = ({
     return { isNear: false, insertIndex: points.length };
   };
 
-  const handleMouseDown = useCallback((e: MouseEvent) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const pos = getMousePos(e);
     const pointIndex = findNearestPoint(pos);
 
@@ -108,7 +108,7 @@ export const usePointInteractions = ({
     }
   }, [points, setPoints, addToHistory]);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDragging || dragPointIndex === null) return;
     
     const pos = getMousePos(e);
