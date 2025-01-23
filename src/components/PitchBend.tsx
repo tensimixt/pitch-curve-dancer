@@ -178,8 +178,8 @@ const PitchBend = () => {
         pitch,
         lyric: 'a',
         controlPoints: [
-          { x: 0, y: 0, connected: false },  // Start point
-          { x: width, y: 0, connected: false }  // End point
+          { x: 0, y: 0, connected: false, shape: 'linear' },  // Start point
+          { x: width, y: 0, connected: false, shape: 'linear' }  // End point
         ]
       };
 

@@ -1,4 +1,4 @@
-import { Point, Note, ControlPoint, Vibrato } from '@/types/canvas';
+import { Point, Note, ControlPoint } from '@/types/canvas';
 
 const GRID_UNIT = 50;
 const NOTE_HEIGHT = 25;
@@ -51,6 +51,21 @@ const calculateExponentialCurve = (
     x: start.x + (end.x - start.x) * t,
     y: start.y + (end.y - start.y) * tExp
   };
+};
+
+export const generateControlPoints = (notes: Note[]): Point[] => {
+  const points: Point[] = [];
+  
+  notes.forEach(note => {
+    note.controlPoints.forEach(cp => {
+      points.push({
+        x: note.startTime + (cp.x * note.duration),
+        y: (note.pitch * 25) + (cp.y * 25)
+      });
+    });
+  });
+  
+  return points;
 };
 
 const drawVibratoWave = (
