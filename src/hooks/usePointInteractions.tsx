@@ -18,7 +18,8 @@ export const usePointInteractions = ({
   const [dragPointIndex, setDragPointIndex] = useState<number | null>(null);
 
   const getMousePos = (e: MouseEvent): Point => {
-    const rect = canvasRef.current!.getBoundingClientRect();
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
     return {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
@@ -78,7 +79,6 @@ export const usePointInteractions = ({
       if (distance2 < 15 && param >= 0 && param <= 1) {
         // Calculate the actual y position on the curve using linear interpolation
         const curveY = p1.y + param * (p2.y - p1.y);
-        pos.y = curveY; // Snap the new point's Y position to the curve
         return { isNear: true, insertIndex: i + 1 };
       }
     }
@@ -86,7 +86,7 @@ export const usePointInteractions = ({
     return { isNear: false, insertIndex: points.length };
   };
 
-  const handleMouseDown = useCallback((e: MouseEvent) => {
+  const handleMouseDown = (e: MouseEvent) => {
     const pos = getMousePos(e);
     const pointIndex = findNearestPoint(pos);
 
@@ -104,13 +104,11 @@ export const usePointInteractions = ({
         // Start dragging the newly created point
         setIsDragging(true);
         setDragPointIndex(insertIndex);
-        
-        console.log('Added point on curve at:', pos);
       }
     }
-  }, [points, setPoints, addToHistory]);
+  };
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
+  const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging || dragPointIndex === null) return;
     
     const pos = getMousePos(e);
@@ -118,15 +116,15 @@ export const usePointInteractions = ({
       i === dragPointIndex ? pos : p
     );
     setPoints(newPoints);
-  }, [isDragging, dragPointIndex, points, setPoints]);
+  };
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = () => {
     if (isDragging && dragPointIndex !== null) {
       addToHistory([...points]);
     }
     setIsDragging(false);
     setDragPointIndex(null);
-  }, [isDragging, dragPointIndex, points, addToHistory]);
+  };
 
   return {
     handleMouseDown,
