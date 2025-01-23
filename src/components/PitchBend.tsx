@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { useCanvas } from '@/hooks/useCanvas';
 import { drawCurve, drawGrid, drawNotes, snapToGrid, getMinNoteWidth, generateControlPoints } from '@/utils/curveUtils';
 import UndoButton from './UndoButton';
@@ -7,8 +8,12 @@ import { usePointsHistory } from '@/hooks/usePointsHistory';
 import { usePointInteractions } from '@/hooks/usePointInteractions';
 import { useNotes } from '@/hooks/useNotes';
 import { Note } from '@/types/canvas';
+import { Pencil, Square } from "lucide-react";
+
+type EditorMode = 'draw' | 'edit';
 
 const PitchBend = () => {
+  const [mode, setMode] = useState<EditorMode>('draw');
   const { canvasRef, context } = useCanvas();
   const {
     points,
@@ -43,9 +48,9 @@ const PitchBend = () => {
   } = useNotes();
 
   const {
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
+    handleMouseDown: handlePointMouseDown,
+    handleMouseMove: handlePointMouseMove,
+    handleMouseUp: handlePointMouseUp,
   } = usePointInteractions({
     points,
     setPoints,
@@ -57,6 +62,30 @@ const PitchBend = () => {
     const handleWidth = 10;
     return x >= (note.startTime + note.duration - handleWidth) && 
            x <= (note.startTime + note.duration);
+  };
+
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    if (mode === 'edit') {
+      handlePointMouseDown(e.nativeEvent);
+    } else {
+      handleNoteMouseDown(e);
+    }
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent) => {
+    if (mode === 'edit') {
+      handlePointMouseMove(e.nativeEvent);
+    } else {
+      handleNoteMouseMove(e);
+    }
+  };
+
+  const handleCanvasMouseUp = (e: React.MouseEvent) => {
+    if (mode === 'edit') {
+      handlePointMouseUp(e.nativeEvent);
+    } else {
+      handleNoteMouseUp(e);
+    }
   };
 
   const handleNoteMouseDown = (e: React.MouseEvent) => {
@@ -197,8 +226,8 @@ const PitchBend = () => {
     setPoints(generatedPoints);
     
     drawGrid(context, canvasRef.current.width, canvasRef.current.height);
-    drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
     drawNotes(context, notes);
+    drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
   }, [points, notes, context]);
 
   const handleUndoClick = () => {
@@ -239,6 +268,24 @@ const PitchBend = () => {
 
   return (
     <div className="relative h-[550px] w-full rounded-md border">
+      <div className="absolute top-2 left-2 z-10 flex gap-2">
+        <Button
+          variant={mode === 'draw' ? 'default' : 'secondary'}
+          size="sm"
+          onClick={() => setMode('draw')}
+        >
+          <Square className="w-4 h-4 mr-1" />
+          Draw Notes
+        </Button>
+        <Button
+          variant={mode === 'edit' ? 'default' : 'secondary'}
+          size="sm"
+          onClick={() => setMode('edit')}
+        >
+          <Pencil className="w-4 h-4 mr-1" />
+          Edit Pitch
+        </Button>
+      </div>
       <ScrollArea className="h-full" orientation="horizontal">
         <div className="flex h-[1100px] w-[10000px] relative">
           {/* Fixed piano keys column */}
@@ -267,10 +314,10 @@ const PitchBend = () => {
             <canvas 
               ref={canvasRef}
               className="absolute top-0 left-0 w-full h-full rounded-lg bg-gray-900"
-              onMouseDown={handleNoteMouseDown}
-              onMouseMove={handleNoteMouseMove}
-              onMouseUp={handleNoteMouseUp}
-              onMouseLeave={handleNoteMouseUp}
+              onMouseDown={handleCanvasMouseDown}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onMouseLeave={handleCanvasMouseUp}
             />
           </div>
         </div>
