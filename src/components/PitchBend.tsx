@@ -285,6 +285,7 @@ const PitchBend = () => {
         disabled={pointsHistoryIndex === 0 && notesHistoryIndex === 0} 
       />
     </div>
+  );
 };
 
 export default PitchBend;
