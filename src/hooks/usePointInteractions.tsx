@@ -27,10 +27,11 @@ export const usePointInteractions = ({
   };
 
   const findNearestPoint = (pos: Point): number | null => {
+    const threshold = 10; // Distance threshold for selecting a point
     for (let i = 0; i < points.length; i++) {
       const dx = points[i].x - pos.x;
       const dy = points[i].y - pos.y;
-      if (Math.sqrt(dx * dx + dy * dy) < 10) {
+      if (Math.sqrt(dx * dx + dy * dy) < threshold) {
         return i;
       }
     }
@@ -38,15 +39,17 @@ export const usePointInteractions = ({
   };
 
   const isPointNearCurve = (pos: Point): { isNear: boolean, insertIndex: number } => {
-    if (points.length < 2) return { isNear: false, insertIndex: points.length };
+    if (points.length < 2) {
+      return { isNear: true, insertIndex: points.length };
+    }
 
+    const threshold = 15; // Distance threshold for adding points near curve
+    
     for (let i = 0; i < points.length - 1; i++) {
       const p1 = points[i];
       const p2 = points[i + 1];
 
-      const distance = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-      if (distance > 100) continue;
-
+      // Calculate distance from point to line segment
       const A = pos.x - p1.x;
       const B = pos.y - p1.y;
       const C = p2.x - p1.x;
@@ -73,9 +76,9 @@ export const usePointInteractions = ({
 
       const dx = pos.x - xx;
       const dy = pos.y - yy;
-      const distance2 = Math.sqrt(dx * dx + dy * dy);
+      const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance2 < 15 && param >= 0 && param <= 1) {
+      if (distance < threshold && param >= 0 && param <= 1) {
         return { isNear: true, insertIndex: i + 1 };
       }
     }
@@ -98,6 +101,7 @@ export const usePointInteractions = ({
         setPoints(newPoints);
         addToHistory(newPoints);
         
+        // Start dragging the newly added point
         setIsDragging(true);
         setDragPointIndex(insertIndex);
       }
@@ -108,15 +112,18 @@ export const usePointInteractions = ({
     if (!isDragging || dragPointIndex === null) return;
     
     const pos = getMousePos(e);
-    const newPoints = points.map((p, i) => 
-      i === dragPointIndex ? pos : p
-    );
+    const newPoints = [...points];
+    newPoints[dragPointIndex] = pos;
     setPoints(newPoints);
   };
 
   const handleMouseUp = (e: MouseEvent) => {
     if (isDragging && dragPointIndex !== null) {
-      addToHistory([...points]);
+      const pos = getMousePos(e);
+      const newPoints = [...points];
+      newPoints[dragPointIndex] = pos;
+      setPoints(newPoints);
+      addToHistory(newPoints);
     }
     setIsDragging(false);
     setDragPointIndex(null);
