@@ -18,102 +18,74 @@ const pixelsToCents = (pixelY: number, baseY: number): number => {
   return Math.round((pixelDistance / NOTE_HEIGHT) * 100);
 };
 
-const calculateHermiteCurve = (
-  p0: Point,
-  p1: Point,
-  t: number,
-  tension: number = 0.5
-): Point => {
-  const t2 = t * t;
-  const t3 = t2 * t;
-  const h1 = 2 * t3 - 3 * t2 + 1;
-  const h2 = -2 * t3 + 3 * t2;
-  const h3 = t3 - 2 * t2 + t;
-  const h4 = t3 - t2;
-  
-  const tx = (p1.x - p0.x) * tension;
-  const ty = (p1.y - p0.y) * tension;
-  
-  return {
-    x: h1 * p0.x + h2 * p1.x + h3 * tx + h4 * tx,
-    y: h1 * p0.y + h2 * p1.y + h3 * ty + h4 * ty
-  };
-};
-
-const calculateExponentialCurve = (
-  start: Point,
-  end: Point,
-  t: number,
-  exponent: number = 2
-): Point => {
-  const tExp = Math.pow(t, exponent);
-  return {
-    x: start.x + (end.x - start.x) * t,
-    y: start.y + (end.y - start.y) * tExp
-  };
-};
-
 export const generateControlPoints = (notes: Note[]): Point[] => {
   const points: Point[] = [];
+  const sortedNotes = [...notes].sort((a, b) => a.startTime - b.startTime);
   
-  notes.forEach(note => {
-    // Convert each note's control points to absolute coordinates
-    note.controlPoints.forEach(cp => {
-      const absoluteX = note.startTime + (cp.x);
-      const absoluteY = (note.pitch * 25) + cp.y;
-      points.push({
-        x: absoluteX,
-        y: absoluteY
-      });
+  sortedNotes.forEach((note, index) => {
+    // Calculate base Y position for this note
+    const noteY = note.pitch * NOTE_HEIGHT;
+    
+    // Ensure note has control points
+    if (!note.controlPoints || note.controlPoints.length === 0) {
+      note.controlPoints = [
+        { x: 0, y: 0, connected: false },  // Start point
+        { x: note.duration, y: 0, connected: false }  // End point
+      ];
+    }
+    
+    // Check if this note connects to the next note
+    if (index < sortedNotes.length - 1) {
+      const nextNote = sortedNotes[index + 1];
+      const isAdjacent = Math.abs(note.startTime + note.duration - nextNote.startTime) < GRID_UNIT / 4;
+      
+      if (isAdjacent) {
+        // Mark end point of current note and start point of next note as connected
+        note.controlPoints[note.controlPoints.length - 1].connected = true;
+        if (!nextNote.controlPoints || nextNote.controlPoints.length === 0) {
+          nextNote.controlPoints = [
+            { x: 0, y: 0, connected: true },
+            { x: nextNote.duration, y: 0, connected: false }
+          ];
+        } else {
+          nextNote.controlPoints[0].connected = true;
+        }
+      }
+    }
+    
+    // Only add points if they're connected to another note or if they're the first/last points of a note
+    note.controlPoints.forEach((cp, cpIndex) => {
+      const isFirstPoint = cpIndex === 0;
+      const isLastPoint = cpIndex === note.controlPoints.length - 1;
+      
+      if (isFirstPoint || isLastPoint || cp.connected) {
+        points.push({
+          x: note.startTime + cp.x,
+          y: noteY + (cp.y * NOTE_HEIGHT / 100)  // Convert cents to pixels
+        });
+      }
     });
   });
-  
+
   return points;
 };
 
-const drawVibratoWave = (
-  context: CanvasRenderingContext2D,
-  note: Note,
-  height: number
-) => {
-  if (!note.vibrato) return;
+const calculateSCurvePoint = (
+  start: Point,
+  end: Point,
+  t: number
+): Point => {
+  // Use a sigmoid function to create the S-curve
+  // This creates a smooth transition that starts slow, accelerates in the middle, and slows down at the end
+  const sigmoid = (x: number) => 1 / (1 + Math.exp(-10 * (x - 0.5)));
   
-  const {
-    length,
-    period,
-    depth,
-    fadeIn,
-    fadeOut,
-    phase
-  } = note.vibrato;
+  // Apply sigmoid to t to get the curved interpolation factor
+  const curvedT = sigmoid(t);
   
-  const startX = note.startTime + note.duration - length;
-  const endX = note.startTime + note.duration;
-  
-  context.beginPath();
-  context.moveTo(startX, height - note.pitch * NOTE_HEIGHT);
-  
-  for (let x = startX; x <= endX; x += 1) {
-    const progress = (x - startX) / length;
-    const fadeMultiplier = Math.min(
-      progress * length / fadeIn,
-      (1 - progress) * length / fadeOut,
-      1
-    );
-    
-    const wave = Math.sin(
-      (progress * length * 2 * Math.PI / period) + (phase * 2 * Math.PI)
-    );
-    
-    const y = height - (
-      note.pitch * NOTE_HEIGHT +
-      wave * depth * fadeMultiplier * (NOTE_HEIGHT / 100)
-    );
-    
-    context.lineTo(x, y);
-  }
-  
-  context.stroke();
+  return {
+    x: start.x + (end.x - start.x) * t, // Keep x linear for timing
+    y: start.y + (end.y - start.y) * curvedT // Apply S-curve to y (pitch)
+  };
 };
 
 export const drawCurve = (
@@ -124,38 +96,27 @@ export const drawCurve = (
 ) => {
   if (points.length < 2) return;
 
+  // Draw curves between points
   let currentPath: Point[] = [];
   
   points.forEach((point, index) => {
     if (index === 0 || Math.abs(point.x - points[index - 1].x) > GRID_UNIT / 2) {
+      // Start a new path if this is the first point or if there's a gap
       if (currentPath.length > 1) {
+        // Draw the previous path with S-curves
         context.beginPath();
         context.moveTo(currentPath[0].x, height - currentPath[0].y);
         
+        // Draw S-curves between each pair of points
         for (let i = 1; i < currentPath.length; i++) {
           const start = currentPath[i - 1];
           const end = currentPath[i];
-          const shape = (points[i] as any).shape || 'linear';
           
+          // Use multiple points to create a smooth S-curve
           const steps = 20;
           for (let step = 1; step <= steps; step++) {
             const t = step / steps;
-            let curvePoint: Point;
-            
-            switch (shape) {
-              case 'hermite':
-                curvePoint = calculateHermiteCurve(start, end, t);
-                break;
-              case 'exponential':
-                curvePoint = calculateExponentialCurve(start, end, t);
-                break;
-              default:
-                curvePoint = {
-                  x: start.x + (end.x - start.x) * t,
-                  y: start.y + (end.y - start.y) * t
-                };
-            }
-            
+            const curvePoint = calculateSCurvePoint(start, end, t);
             context.lineTo(curvePoint.x, height - curvePoint.y);
           }
         }
@@ -170,34 +131,20 @@ export const drawCurve = (
     }
   });
   
+  // Draw the last path if it exists
   if (currentPath.length > 1) {
     context.beginPath();
     context.moveTo(currentPath[0].x, height - currentPath[0].y);
     
+    // Draw S-curves for the last path
     for (let i = 1; i < currentPath.length; i++) {
       const start = currentPath[i - 1];
       const end = currentPath[i];
-      const shape = (points[i] as any).shape || 'linear';
       
       const steps = 20;
       for (let step = 1; step <= steps; step++) {
         const t = step / steps;
-        let curvePoint: Point;
-        
-        switch (shape) {
-          case 'hermite':
-            curvePoint = calculateHermiteCurve(start, end, t);
-            break;
-          case 'exponential':
-            curvePoint = calculateExponentialCurve(start, end, t);
-            break;
-          default:
-            curvePoint = {
-              x: start.x + (end.x - start.x) * t,
-              y: start.y + (end.y - start.y) * t
-            };
-        }
-        
+        const curvePoint = calculateSCurvePoint(start, end, t);
         context.lineTo(curvePoint.x, height - curvePoint.y);
       }
     }
@@ -207,6 +154,7 @@ export const drawCurve = (
     context.stroke();
   }
 
+  // Draw control points
   points.forEach((point) => {
     context.beginPath();
     context.arc(point.x, height - point.y, 5, 0, Math.PI * 2);
@@ -216,6 +164,7 @@ export const drawCurve = (
     context.lineWidth = 2;
     context.stroke();
 
+    // Add relative cent values near control points
     const noteIndex = Math.floor(point.y / NOTE_HEIGHT);
     const baseY = noteIndex * NOTE_HEIGHT;
     const cents = pixelsToCents(point.y, baseY);
@@ -231,8 +180,10 @@ export const drawGrid = (
   width: number,
   height: number
 ) => {
+  // Clear canvas
   context.clearRect(0, 0, width, height);
   
+  // Draw horizontal note lines
   for (let y = 0; y <= height; y += NOTE_HEIGHT) {
     context.beginPath();
     context.strokeStyle = '#2a2a2a';
@@ -242,9 +193,10 @@ export const drawGrid = (
     context.stroke();
   }
   
-  const sixteenthWidth = GRID_UNIT / 4;
-  const measureWidth = GRID_UNIT * 4;
+  const sixteenthWidth = GRID_UNIT / 4; // Width of a sixteenth note
+  const measureWidth = GRID_UNIT * 4; // Width of a full measure (4 beats)
   
+  // Draw vertical beat lines and subdivisions
   for (let x = 0; x <= width; x += sixteenthWidth) {
     const isMeasureLine = x % measureWidth === 0;
     const isBeatLine = x % GRID_UNIT === 0;
@@ -257,6 +209,7 @@ export const drawGrid = (
     context.lineTo(x, height);
     context.stroke();
     
+    // Add measure numbers (1,2,3,4,...)
     if (isMeasureLine) {
       context.font = '12px monospace';
       context.fillStyle = '#666666';
@@ -271,15 +224,19 @@ export const drawNotes = (
   notes: Note[]
 ) => {
   notes.forEach(note => {
+    // Calculate Y position to align perfectly with grid lines
     const y = context.canvas.height - ((note.pitch + 0.5) * NOTE_HEIGHT);
     
+    // Draw note rectangle with exact height matching piano keys
     context.fillStyle = 'rgba(0, 255, 136, 0.5)';
     context.fillRect(note.startTime, y - (NOTE_HEIGHT / 2), note.duration, NOTE_HEIGHT);
     
+    // Draw note border
     context.strokeStyle = 'rgba(0, 255, 136, 0.8)';
     context.lineWidth = 2;
     context.strokeRect(note.startTime, y - (NOTE_HEIGHT / 2), note.duration, NOTE_HEIGHT);
     
+    // Draw lyric
     context.fillStyle = '#ffffff';
     context.font = '12px monospace';
     context.fillText(note.lyric, note.startTime + 5, y + 5);
@@ -287,10 +244,12 @@ export const drawNotes = (
 };
 
 export const snapToGrid = (value: number): number => {
-  const snapUnit = GRID_UNIT / 4;
+  // Snap to the nearest sixteenth note
+  const snapUnit = GRID_UNIT / 4; // Sixteenth note division
   return Math.round(value / snapUnit) * snapUnit;
 };
 
 export const getMinNoteWidth = (): number => {
+  // Minimum note width is one sixteenth note
   return GRID_UNIT / 4;
 };

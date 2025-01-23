@@ -152,41 +152,42 @@ const PitchBend = () => {
     }
   };
 
-const handleNoteMouseUp = (e: React.MouseEvent) => {
-  if (isResizing) {
-    stopResizing();
-  } else if (isDragging) {
-    stopDragging();
-  } else if (isDrawing && drawStart && canvasRef.current) {
-    const rect = canvasRef.current.getBoundingClientRect();
-    const endX = e.clientX - rect.left;
-    
-    const noteHeight = 25;
-    const snapY = Math.round(drawStart.y / noteHeight) * noteHeight;
-    const pitch = Math.floor((canvasRef.current.height - snapY) / noteHeight);
-    
-    const width = Math.max(
-      getMinNoteWidth(),
-      snapToGrid(endX - drawStart.x)
-    );
+  const handleNoteMouseUp = (e: React.MouseEvent) => {
+    if (isResizing) {
+      stopResizing();
+    } else if (isDragging) {
+      stopDragging();
+    } else if (isDrawing && drawStart && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const endX = e.clientX - rect.left;
+      
+      const noteHeight = 25;
+      const snapY = Math.round(drawStart.y / noteHeight) * noteHeight;
+      const pitch = Math.floor((canvasRef.current.height - snapY) / noteHeight);
+      
+      // Snap note width to grid and ensure minimum width
+      const width = Math.max(
+        getMinNoteWidth(),
+        snapToGrid(endX - drawStart.x)
+      );
 
-    const newNote: Note = {
-      id: Date.now().toString(),
-      startTime: snapToGrid(drawStart.x),
-      duration: width,
-      pitch,
-      lyric: 'a',
-      controlPoints: [
-        { x: 0, y: 0, connected: false, shape: 'linear' },  // Start point
-        { x: width, y: 0, connected: false, shape: 'linear' }  // End point
-      ]
-    };
+      const newNote: Note = {
+        id: Date.now().toString(),
+        startTime: snapToGrid(drawStart.x),
+        duration: width,
+        pitch,
+        lyric: 'a',
+        controlPoints: [
+          { x: 0, y: 0, connected: false },  // Start point
+          { x: width, y: 0, connected: false }  // End point
+        ]
+      };
 
-    addNote(newNote);
-    setIsDrawing(false);
-    setDrawStart(null);
-  }
-};
+      addNote(newNote);
+      setIsDrawing(false);
+      setDrawStart(null);
+    }
+  };
 
   useEffect(() => {
     if (!context || !canvasRef.current) return;
