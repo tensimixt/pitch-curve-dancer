@@ -60,7 +60,7 @@ const PitchBend = () => {
            x <= (note.startTime + note.duration);
   };
 
-  const handleNoteMouseDown = (e: React.MouseEvent) => {
+  const handleNoteMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
     
     const rect = canvasRef.current.getBoundingClientRect();
@@ -103,8 +103,10 @@ const PitchBend = () => {
     }
   };
 
-  const handleNoteMouseMove = (e: React.MouseEvent) => {
+  const handleNoteMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !context) return;
+
+    handleMouseMove(e.nativeEvent);
 
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -113,7 +115,7 @@ const PitchBend = () => {
     if (isResizing && resizingNote && resizeStartX !== null) {
       const note = notes.find(n => n.id === resizingNote);
       if (note) {
-        const newDuration = Math.max(30, x - note.startTime); // Changed from 50 to 30
+        const newDuration = Math.max(30, x - note.startTime);
         updateNote(resizingNote, { duration: newDuration });
       }
     } else if (isDragging && draggedNote) {
@@ -162,7 +164,9 @@ const PitchBend = () => {
     }
   };
 
-  const handleNoteMouseUp = (e: React.MouseEvent) => {
+  const handleNoteMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    handleMouseUp();
+    
     if (isResizing) {
       stopResizing();
     } else if (isDragging) {
@@ -274,9 +278,9 @@ const PitchBend = () => {
               ref={canvasRef}
               className="absolute top-0 left-0 w-full h-full rounded-lg bg-gray-900"
               onMouseDown={handleNoteMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
+              onMouseMove={handleNoteMouseMove}
+              onMouseUp={handleNoteMouseUp}
+              onMouseLeave={handleNoteMouseUp}
             />
           </div>
         </div>
