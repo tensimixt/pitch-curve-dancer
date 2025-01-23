@@ -70,6 +70,24 @@ export const generateControlPoints = (notes: Note[]): Point[] => {
   return points;
 };
 
+const calculateSCurvePoint = (
+  start: Point,
+  end: Point,
+  t: number
+): Point => {
+  // Use a sigmoid function to create the S-curve
+  // This creates a smooth transition that starts slow, accelerates in the middle, and slows down at the end
+  const sigmoid = (x: number) => 1 / (1 + Math.exp(-10 * (x - 0.5)));
+  
+  // Apply sigmoid to t to get the curved interpolation factor
+  const curvedT = sigmoid(t);
+  
+  return {
+    x: start.x + (end.x - start.x) * t, // Keep x linear for timing
+    y: start.y + (end.y - start.y) * curvedT // Apply S-curve to y (pitch)
+  };
+};
+
 export const drawCurve = (
   context: CanvasRenderingContext2D,
   points: Point[],
@@ -85,12 +103,24 @@ export const drawCurve = (
     if (index === 0 || Math.abs(point.x - points[index - 1].x) > GRID_UNIT / 2) {
       // Start a new path if this is the first point or if there's a gap
       if (currentPath.length > 1) {
-        // Draw the previous path
+        // Draw the previous path with S-curves
         context.beginPath();
         context.moveTo(currentPath[0].x, height - currentPath[0].y);
-        currentPath.forEach((p, i) => {
-          if (i > 0) context.lineTo(p.x, height - p.y);
-        });
+        
+        // Draw S-curves between each pair of points
+        for (let i = 1; i < currentPath.length; i++) {
+          const start = currentPath[i - 1];
+          const end = currentPath[i];
+          
+          // Use multiple points to create a smooth S-curve
+          const steps = 20;
+          for (let step = 1; step <= steps; step++) {
+            const t = step / steps;
+            const curvePoint = calculateSCurvePoint(start, end, t);
+            context.lineTo(curvePoint.x, height - curvePoint.y);
+          }
+        }
+        
         context.strokeStyle = '#00ff88';
         context.lineWidth = 2;
         context.stroke();
@@ -105,9 +135,20 @@ export const drawCurve = (
   if (currentPath.length > 1) {
     context.beginPath();
     context.moveTo(currentPath[0].x, height - currentPath[0].y);
-    currentPath.forEach((p, i) => {
-      if (i > 0) context.lineTo(p.x, height - p.y);
-    });
+    
+    // Draw S-curves for the last path
+    for (let i = 1; i < currentPath.length; i++) {
+      const start = currentPath[i - 1];
+      const end = currentPath[i];
+      
+      const steps = 20;
+      for (let step = 1; step <= steps; step++) {
+        const t = step / steps;
+        const curvePoint = calculateSCurvePoint(start, end, t);
+        context.lineTo(curvePoint.x, height - curvePoint.y);
+      }
+    }
+    
     context.strokeStyle = '#00ff88';
     context.lineWidth = 2;
     context.stroke();
