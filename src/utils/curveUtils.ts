@@ -57,10 +57,13 @@ export const generateControlPoints = (notes: Note[]): Point[] => {
   const points: Point[] = [];
   
   notes.forEach(note => {
+    // Convert each note's control points to absolute coordinates
     note.controlPoints.forEach(cp => {
+      const absoluteX = note.startTime + (cp.x);
+      const absoluteY = (note.pitch * 25) + cp.y;
       points.push({
-        x: note.startTime + (cp.x * note.duration),
-        y: (note.pitch * 25) + (cp.y * 25)
+        x: absoluteX,
+        y: absoluteY
       });
     });
   });
