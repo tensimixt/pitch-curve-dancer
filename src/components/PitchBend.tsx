@@ -66,7 +66,6 @@ const PitchBend = () => {
     const { isNear } = pointInteractions.isPointNearCurve(pos);
 
     if (isNear) {
-      // If clicking near a curve, handle it with the point interactions
       pointInteractions.handleMouseDown(e.nativeEvent);
       return;
     }
@@ -198,12 +197,34 @@ const PitchBend = () => {
     }
   };
 
+  // Update points when notes change
+  useEffect(() => {
+    if (!context || !canvasRef.current) return;
+    
+    // Generate points from notes' control points
+    const newPoints: Point[] = [];
+    notes.forEach(note => {
+      note.controlPoints.forEach(cp => {
+        newPoints.push({
+          x: note.startTime + cp.x,
+          y: canvasRef.current!.height - ((note.pitch * 25) + cp.y)
+        });
+      });
+    });
+    
+    if (newPoints.length > 0 && points.length === 0) {
+      setPoints(newPoints);
+      addToHistory(newPoints);
+    }
+  }, [notes, context, canvasRef]);
+
+  // Draw everything when points or notes change
   useEffect(() => {
     if (!context || !canvasRef.current) return;
     
     drawGrid(context, canvasRef.current.width, canvasRef.current.height);
-    drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
     drawNotes(context, notes);
+    drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
   }, [points, notes, context]);
 
   const handleUndoClick = () => {
@@ -214,7 +235,6 @@ const PitchBend = () => {
     }
   };
 
-  // Generate piano keys with note names
   const generateNoteNames = () => {
     const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     const startOctave = 6;
