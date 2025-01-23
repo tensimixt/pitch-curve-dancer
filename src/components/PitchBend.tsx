@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCanvas } from '@/hooks/useCanvas';
-import { drawCurve, drawGrid, drawNotes, snapToGrid, getMinNoteWidth, generateControlPoints } from '@/utils/curveUtils';
+import { drawCurve, drawGrid, drawNotes, snapToGrid, getMinNoteWidth } from '@/utils/curveUtils';
 import UndoButton from './UndoButton';
 import { usePointsHistory } from '@/hooks/usePointsHistory';
 import { usePointInteractions } from '@/hooks/usePointInteractions';
 import { useNotes } from '@/hooks/useNotes';
-import { Note } from '@/types/canvas';
+import { Note, Point } from '@/types/canvas';
 
 const PitchBend = () => {
   const { canvasRef, context } = useCanvas();
@@ -46,6 +46,7 @@ const PitchBend = () => {
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    isPointNearCurve,
   } = usePointInteractions({
     points,
     setPoints,
@@ -65,6 +66,15 @@ const PitchBend = () => {
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    
+    const pos: Point = { x, y };
+    const { isNear } = isPointNearCurve(pos);
+
+    if (isNear) {
+      // If clicking near a curve, handle it with the point interactions
+      handleMouseDown(e.nativeEvent);
+      return;
+    }
     
     // Check if clicking on an existing note
     const clickedNote = notes.find(note => {
@@ -192,10 +202,6 @@ const PitchBend = () => {
   useEffect(() => {
     if (!context || !canvasRef.current) return;
     
-    // Generate control points from notes
-    const generatedPoints = generateControlPoints(notes);
-    setPoints(generatedPoints);
-    
     drawGrid(context, canvasRef.current.width, canvasRef.current.height);
     drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
     drawNotes(context, notes);
@@ -268,9 +274,9 @@ const PitchBend = () => {
               ref={canvasRef}
               className="absolute top-0 left-0 w-full h-full rounded-lg bg-gray-900"
               onMouseDown={handleNoteMouseDown}
-              onMouseMove={handleNoteMouseMove}
-              onMouseUp={handleNoteMouseUp}
-              onMouseLeave={handleNoteMouseUp}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
             />
           </div>
         </div>
