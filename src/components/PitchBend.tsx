@@ -42,12 +42,7 @@ const PitchBend = () => {
     handleUndo: handleNotesUndo
   } = useNotes();
 
-  const {
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
-    isPointNearCurve,
-  } = usePointInteractions({
+  const pointInteractions = usePointInteractions({
     points,
     setPoints,
     addToHistory,
@@ -68,11 +63,11 @@ const PitchBend = () => {
     const y = e.clientY - rect.top;
     
     const pos: Point = { x, y };
-    const { isNear } = isPointNearCurve(pos);
+    const { isNear } = pointInteractions.isPointNearCurve(pos);
 
     if (isNear) {
       // If clicking near a curve, handle it with the point interactions
-      handleMouseDown(e.nativeEvent);
+      pointInteractions.handleMouseDown(e.nativeEvent);
       return;
     }
     
@@ -106,7 +101,7 @@ const PitchBend = () => {
   const handleNoteMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !context) return;
 
-    handleMouseMove(e.nativeEvent);
+    pointInteractions.handleMouseMove(e.nativeEvent);
 
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -165,7 +160,7 @@ const PitchBend = () => {
   };
 
   const handleNoteMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    handleMouseUp();
+    pointInteractions.handleMouseUp();
     
     if (isResizing) {
       stopResizing();
@@ -290,7 +285,6 @@ const PitchBend = () => {
         disabled={pointsHistoryIndex === 0 && notesHistoryIndex === 0} 
       />
     </div>
-  );
 };
 
 export default PitchBend;
