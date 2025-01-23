@@ -77,8 +77,6 @@ export const usePointInteractions = ({
       const distance2 = Math.sqrt(dx * dx + dy * dy);
 
       if (distance2 < 15 && param >= 0 && param <= 1) {
-        // Calculate the actual y position on the curve using linear interpolation
-        const curveY = p1.y + param * (p2.y - p1.y);
         return { isNear: true, insertIndex: i + 1 };
       }
     }
