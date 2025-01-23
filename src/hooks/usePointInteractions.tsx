@@ -116,7 +116,7 @@ export const usePointInteractions = ({
     setPoints(newPoints);
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: MouseEvent) => {
     if (isDragging && dragPointIndex !== null) {
       addToHistory([...points]);
     }
