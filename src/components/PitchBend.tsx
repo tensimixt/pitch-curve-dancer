@@ -204,10 +204,11 @@ const PitchBend = () => {
     // Generate points from notes' control points
     const newPoints: Point[] = [];
     notes.forEach(note => {
+      const noteY = canvasRef.current!.height - (note.pitch * 25);
       note.controlPoints.forEach(cp => {
         newPoints.push({
           x: note.startTime + cp.x,
-          y: canvasRef.current!.height - ((note.pitch * 25) + cp.y)
+          y: noteY - cp.y  // Now relative to the note's position
         });
       });
     });
