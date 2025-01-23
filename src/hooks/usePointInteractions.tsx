@@ -132,6 +132,5 @@ export const usePointInteractions = ({
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
-    isPointNearCurve
   };
 };

@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCanvas } from '@/hooks/useCanvas';
-import { drawCurve, drawGrid, drawNotes, snapToGrid, getMinNoteWidth } from '@/utils/curveUtils';
+import { drawCurve, drawGrid, drawNotes, snapToGrid, getMinNoteWidth, generateControlPoints } from '@/utils/curveUtils';
 import UndoButton from './UndoButton';
 import { usePointsHistory } from '@/hooks/usePointsHistory';
 import { usePointInteractions } from '@/hooks/usePointInteractions';
 import { useNotes } from '@/hooks/useNotes';
-import { Note, Point } from '@/types/canvas';
+import { Note } from '@/types/canvas';
 
 const PitchBend = () => {
   const { canvasRef, context } = useCanvas();
@@ -42,7 +42,11 @@ const PitchBend = () => {
     handleUndo: handleNotesUndo
   } = useNotes();
 
-  const pointInteractions = usePointInteractions({
+  const {
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+  } = usePointInteractions({
     points,
     setPoints,
     addToHistory,
@@ -55,20 +59,12 @@ const PitchBend = () => {
            x <= (note.startTime + note.duration);
   };
 
-  const handleNoteMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleNoteMouseDown = (e: React.MouseEvent) => {
     if (!canvasRef.current) return;
     
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
-    const pos: Point = { x, y };
-    const { isNear } = pointInteractions.isPointNearCurve(pos);
-
-    if (isNear) {
-      pointInteractions.handleMouseDown(e.nativeEvent);
-      return;
-    }
     
     // Check if clicking on an existing note
     const clickedNote = notes.find(note => {
@@ -97,10 +93,8 @@ const PitchBend = () => {
     }
   };
 
-  const handleNoteMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleNoteMouseMove = (e: React.MouseEvent) => {
     if (!canvasRef.current || !context) return;
-
-    pointInteractions.handleMouseMove(e.nativeEvent);
 
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -109,7 +103,7 @@ const PitchBend = () => {
     if (isResizing && resizingNote && resizeStartX !== null) {
       const note = notes.find(n => n.id === resizingNote);
       if (note) {
-        const newDuration = Math.max(30, x - note.startTime);
+        const newDuration = Math.max(30, x - note.startTime); // Changed from 50 to 30
         updateNote(resizingNote, { duration: newDuration });
       }
     } else if (isDragging && draggedNote) {
@@ -158,9 +152,7 @@ const PitchBend = () => {
     }
   };
 
-  const handleNoteMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    pointInteractions.handleMouseUp();
-    
+  const handleNoteMouseUp = (e: React.MouseEvent) => {
     if (isResizing) {
       stopResizing();
     } else if (isDragging) {
@@ -197,35 +189,16 @@ const PitchBend = () => {
     }
   };
 
-  // Update points when notes change
   useEffect(() => {
     if (!context || !canvasRef.current) return;
     
-    // Generate points from notes' control points
-    const newPoints: Point[] = [];
-    notes.forEach(note => {
-      const noteY = canvasRef.current!.height - (note.pitch * 25);
-      note.controlPoints.forEach(cp => {
-        newPoints.push({
-          x: note.startTime + cp.x,
-          y: noteY - cp.y  // Now relative to the note's position
-        });
-      });
-    });
-    
-    if (newPoints.length > 0 && points.length === 0) {
-      setPoints(newPoints);
-      addToHistory(newPoints);
-    }
-  }, [notes, context, canvasRef]);
-
-  // Draw everything when points or notes change
-  useEffect(() => {
-    if (!context || !canvasRef.current) return;
+    // Generate control points from notes
+    const generatedPoints = generateControlPoints(notes);
+    setPoints(generatedPoints);
     
     drawGrid(context, canvasRef.current.width, canvasRef.current.height);
-    drawNotes(context, notes);
     drawCurve(context, points, canvasRef.current.width, canvasRef.current.height);
+    drawNotes(context, notes);
   }, [points, notes, context]);
 
   const handleUndoClick = () => {
@@ -236,6 +209,7 @@ const PitchBend = () => {
     }
   };
 
+  // Generate piano keys with note names
   const generateNoteNames = () => {
     const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     const startOctave = 6;
